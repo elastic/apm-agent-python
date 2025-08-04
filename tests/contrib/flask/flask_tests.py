@@ -50,11 +50,6 @@ from tests.contrib.flask.utils import captured_templates
 pytestmark = pytest.mark.flask
 
 
-def test_logging_parameter_raises_exception():
-    with pytest.raises(ValueError, match="Flask log shipping has been removed, drop the ElasticAPM logging parameter"):
-        ElasticAPM(config=None, logging=True)
-
-
 def test_error_handler(flask_apm_client):
     client = flask_apm_client.app.test_client()
     response = client.get("/an-error/")
@@ -444,6 +439,32 @@ def test_rum_tracing_context_processor(flask_apm_client):
         assert context["apm"]["is_sampled"]
         assert context["apm"]["is_sampled_js"] == "true"
         assert callable(context["apm"]["span_id"])
+
+
+@pytest.mark.parametrize("flask_apm_client", [{"logging": True}], indirect=True)
+def test_logging_enabled(flask_apm_client):
+    logger = logging.getLogger()
+    logger.error("test")
+    error = flask_apm_client.client.events[ERROR][0]
+    assert error["log"]["level"] == "error"
+    assert error["log"]["message"] == "test"
+
+
+@pytest.mark.parametrize("flask_apm_client", [{"logging": False}], indirect=True)
+def test_logging_disabled(flask_apm_client):
+    logger = logging.getLogger()
+    logger.error("test")
+    assert len(flask_apm_client.client.events[ERROR]) == 0
+
+
+@pytest.mark.parametrize("flask_apm_client", [{"logging": logging.ERROR}], indirect=True)
+def test_logging_by_level(flask_apm_client):
+    logger = logging.getLogger()
+    logger.warning("test")
+    logger.error("test")
+    assert len(flask_apm_client.client.events[ERROR]) == 1
+    error = flask_apm_client.client.events[ERROR][0]
+    assert error["log"]["level"] == "error"
 
 
 def test_flask_transaction_ignore_urls(flask_apm_client):

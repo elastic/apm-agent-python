@@ -31,6 +31,9 @@
 
 from __future__ import absolute_import
 
+import logging
+import warnings
+
 import flask
 from flask import request, signals
 
@@ -38,8 +41,9 @@ import elasticapm
 import elasticapm.instrumentation.control
 from elasticapm import get_client
 from elasticapm.base import Client
-from elasticapm.conf import constants
+from elasticapm.conf import constants, setup_logging
 from elasticapm.contrib.flask.utils import get_data_from_request, get_data_from_response
+from elasticapm.handlers.logging import LoggingHandler
 from elasticapm.traces import execution_context
 from elasticapm.utils import build_name_with_http_method_prefix
 from elasticapm.utils.disttracing import TraceParent
@@ -77,13 +81,16 @@ class ElasticAPM(object):
     >>> elasticapm.capture_message('hello, world!')
     """
 
-    def __init__(self, app=None, client=None, client_cls=Client, **defaults) -> None:
+    def __init__(self, app=None, client=None, client_cls=Client, logging=False, **defaults) -> None:
         self.app = app
+        self.logging = logging
+        if self.logging:
+            warnings.warn(
+                "Flask log shipping is deprecated. See the Flask docs for more info and alternatives.",
+                DeprecationWarning,
+            )
         self.client = client or get_client()
         self.client_cls = client_cls
-
-        if "logging" in defaults:
-            raise ValueError("Flask log shipping has been removed, drop the ElasticAPM logging parameter")
 
         if app:
             self.init_app(app, **defaults)
@@ -119,6 +126,14 @@ class ElasticAPM(object):
                 defaults["framework_version"] = getattr(flask, "__version__", "<0.7")
 
             self.client = self.client_cls(config, **defaults)
+
+        # 0 is a valid log level (NOTSET), so we need to check explicitly for it
+        if self.logging or self.logging is logging.NOTSET:
+            if self.logging is not True:
+                kwargs = {"level": self.logging}
+            else:
+                kwargs = {}
+            setup_logging(LoggingHandler(self.client, **kwargs))
 
         signals.got_request_exception.connect(self.handle_exception, sender=app, weak=False)
 

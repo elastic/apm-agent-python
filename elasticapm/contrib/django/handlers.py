@@ -31,10 +31,43 @@
 
 from __future__ import absolute_import
 
+import logging
 import sys
 import warnings
 
 from django.conf import settings as django_settings
+
+from elasticapm import get_client
+from elasticapm.handlers.logging import LoggingHandler as BaseLoggingHandler
+from elasticapm.utils.logging import get_logger
+
+logger = get_logger("elasticapm.logging")
+
+
+class LoggingHandler(BaseLoggingHandler):
+    def __init__(self, level=logging.NOTSET) -> None:
+        warnings.warn(
+            "The LoggingHandler is deprecated and will be removed in v7.0 of the agent. "
+            "Please use `log_ecs_reformatting` and ship the logs with Elastic "
+            "Agent or Filebeat instead. "
+            "https://www.elastic.co/guide/en/apm/agent/python/current/logs.html",
+            DeprecationWarning,
+        )
+        # skip initialization of BaseLoggingHandler
+        logging.Handler.__init__(self, level=level)
+
+    @property
+    def client(self):
+        return get_client()
+
+    def _emit(self, record, **kwargs):
+        from elasticapm.contrib.django.middleware import LogMiddleware
+
+        # Fetch the request from a threadlocal variable, if available
+        request = getattr(LogMiddleware.thread, "request", None)
+        request = getattr(record, "request", request)
+
+        return super(LoggingHandler, self)._emit(record, request=request, **kwargs)
 
 
 def exception_handler(client, request=None, **kwargs):

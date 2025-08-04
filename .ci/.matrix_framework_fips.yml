@@ -6,6 +6,7 @@ FRAMEWORK:
   - flask-3.0
   - jinja2-3
   - opentelemetry-newest
+  - opentracing-newest
   - twisted-newest
   - celery-5-flask-2
   - celery-5-django-5
