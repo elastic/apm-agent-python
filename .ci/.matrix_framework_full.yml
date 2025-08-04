@@ -30,6 +30,8 @@ FRAMEWORK:
   - celery-5-django-4
   - celery-5-django-5
   - opentelemetry-newest
+  - opentracing-newest
+  - opentracing-2.0
   - twisted-newest
   - twisted-18
   - twisted-17
