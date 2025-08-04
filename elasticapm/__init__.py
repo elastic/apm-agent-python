@@ -62,7 +62,7 @@ except Exception:
     VERSION = "unknown"
 
 
-if sys.version_info < (3, 8):
-    raise DeprecationWarning("The Elastic APM agent requires Python 3.8+")
+if sys.version_info < (3, 7):
+    raise DeprecationWarning("The Elastic APM agent requires Python 3.7+")
 
 from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401 E402

@@ -5,13 +5,24 @@ exclude:
   # Django 4.0 requires Python 3.8+
   - VERSION: pypy-3 # current pypy-3 is compatible with Python 3.7
     FRAMEWORK: django-4.0
+  - VERSION: python-3.7
+    FRAMEWORK: django-4.0
+  # Django 4.2 requires Python 3.8+
+  - VERSION: python-3.7
+    FRAMEWORK: django-4.2
   # Django 5.0 requires Python 3.10+
+  - VERSION: python-3.7
+    FRAMEWORK: django-5.0
   - VERSION: python-3.8
     FRAMEWORK: django-5.0
   - VERSION: python-3.9
     FRAMEWORK: django-5.0
   - VERSION: pypy-3 # current pypy-3 is compatible with Python 3.7
     FRAMEWORK: celery-5-django-4
+  - VERSION: python-3.7
+    FRAMEWORK: celery-5-django-4
+  - VERSION: python-3.7
+    FRAMEWORK: celery-5-django-5
   - VERSION: python-3.8
     FRAMEWORK: celery-5-django-5
   - VERSION: python-3.9
@@ -19,6 +30,10 @@ exclude:
   # Flask
   - VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released
+  - VERSION: python-3.7
+    FRAMEWORK: flask-2.3
+  - VERSION: python-3.7
+    FRAMEWORK: flask-3.0
   # Python 3.10 removed a bunch of classes from collections, now in collections.abc
   - VERSION: python-3.10
     FRAMEWORK: django-1.11
@@ -251,6 +266,8 @@ exclude:
   - VERSION: python-3.13
     FRAMEWORK: pylibmc-1.4
   # grpc
+  - VERSION: python-3.7
+    FRAMEWORK: grpc-1.24
   - VERSION: python-3.8
     FRAMEWORK: grpc-1.24
   - VERSION: python-3.9
@@ -263,6 +280,12 @@ exclude:
     FRAMEWORK: grpc-1.24
   - VERSION: python-3.13
     FRAMEWORK: grpc-1.24
+  - VERSION: python-3.7
+    FRAMEWORK: flask-1.0
+  - VERSION: python-3.7
+    FRAMEWORK: flask-1.1
+  - VERSION: python-3.7
+    FRAMEWORK: jinja2-2
   # TODO py3.12
   - VERSION: python-3.12
     FRAMEWORK: sanic-20.12  # no wheels available yet

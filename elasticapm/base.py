@@ -704,8 +704,8 @@ class Client(object):
 
     def check_python_version(self) -> None:
         v = tuple(map(int, platform.python_version_tuple()[:2]))
-        if v < (3, 8):
-            warnings.warn("The Elastic APM agent only supports Python 3.8+", DeprecationWarning)
+        if v < (3, 7):
+            warnings.warn("The Elastic APM agent only supports Python 3.7+", DeprecationWarning)
 
     def check_server_version(
         self, gte: Optional[Tuple[int, ...]] = None, lte: Optional[Tuple[int, ...]] = None
