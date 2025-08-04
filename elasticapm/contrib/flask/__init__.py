@@ -82,9 +82,6 @@ class ElasticAPM(object):
         self.client = client or get_client()
         self.client_cls = client_cls
 
-        if "logging" in defaults:
-            raise ValueError("Flask log shipping has been removed, drop the ElasticAPM logging parameter")
-
         if app:
             self.init_app(app, **defaults)
 

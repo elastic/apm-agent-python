@@ -50,11 +50,6 @@ from tests.contrib.flask.utils import captured_templates
 pytestmark = pytest.mark.flask
 
 
-def test_logging_parameter_raises_exception():
-    with pytest.raises(ValueError, match="Flask log shipping has been removed, drop the ElasticAPM logging parameter"):
-        ElasticAPM(config=None, logging=True)
-
-
 def test_error_handler(flask_apm_client):
     client = flask_apm_client.app.test_client()
     response = client.get("/an-error/")
