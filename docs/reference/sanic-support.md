@@ -133,8 +133,4 @@ In order to enable this behavior, the APM Client middleware provides a few callb
 
 A list of supported [Sanic](/reference/supported-technologies.md#supported-sanic) and [Python](/reference/supported-technologies.md#supported-python) versions can be found on our [Supported Technologies](/reference/supported-technologies.md) page.
 
-::::{note}
-Elastic APM only supports `asyncio` when using Python 3.7+
-::::
-
 
