@@ -46,8 +46,8 @@ services:
     volumes:
       - pymongodata36:/data/db
 
-  mongodb40:
-    image: mongo:4.0
+  mongodb42:
+    image: mongo:4.2
     ports:
       - "27017:27017"
     volumes:
