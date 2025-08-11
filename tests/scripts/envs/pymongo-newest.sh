@@ -1,3 +1,3 @@
 export PYTEST_MARKER="-m mongodb"
-export DOCKER_DEPS="mongodb40"
-export MONGODB_HOST="mongodb40"
+export DOCKER_DEPS="mongodb42"
+export MONGODB_HOST="mongodb42"
