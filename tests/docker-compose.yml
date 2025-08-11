@@ -51,7 +51,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - pymongodata40:/data/db
+      - pymongodata42:/data/db
 
   memcached:
     image: memcached
