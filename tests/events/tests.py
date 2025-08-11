@@ -32,9 +32,8 @@
 
 from __future__ import absolute_import
 
-from unittest.mock import Mock
-
 import pytest
+from mock import Mock
 
 from elasticapm.events import Exception, Message
 

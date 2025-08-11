@@ -32,8 +32,8 @@ import decimal
 import logging
 import time
 from collections import defaultdict
-from unittest import mock
 
+import mock
 import pytest
 
 import elasticapm

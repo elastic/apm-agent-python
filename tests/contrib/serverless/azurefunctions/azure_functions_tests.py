@@ -33,9 +33,9 @@ azure = pytest.importorskip("azure.functions")
 
 import datetime
 import os
-from unittest import mock
 
 import azure.functions as func
+import mock
 
 import elasticapm
 from elasticapm.conf import constants

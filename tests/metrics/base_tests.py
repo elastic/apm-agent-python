@@ -31,8 +31,8 @@
 import logging
 import time
 from multiprocessing.dummy import Pool
-from unittest import mock
 
+import mock
 import pytest
 
 from elasticapm.conf import constants
