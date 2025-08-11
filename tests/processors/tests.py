@@ -34,8 +34,8 @@ from __future__ import absolute_import
 
 import logging
 import os
-from unittest import mock
 
+import mock
 import pytest
 
 import elasticapm
@@ -464,9 +464,7 @@ def test_drop_events_in_processor(elasticapm_client, caplog):
     assert shouldnt_be_called_processor.call_count == 0
     assert elasticapm_client._transport.events[TRANSACTION][0] is None
     assert_any_record_contains(
-        caplog.records,
-        "Dropped event of type transaction due to processor unittest.mock.dropper",
-        "elasticapm.transport",
+        caplog.records, "Dropped event of type transaction due to processor mock.mock.dropper", "elasticapm.transport"
     )
 
 

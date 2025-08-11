@@ -35,8 +35,8 @@ import os
 import platform
 import stat
 from datetime import timedelta
-from unittest import mock
 
+import mock
 import pytest
 
 import elasticapm.conf

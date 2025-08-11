@@ -41,8 +41,8 @@ import json
 import logging
 import os
 from copy import deepcopy
-from unittest import mock
 
+import mock
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.redirects.models import Redirect

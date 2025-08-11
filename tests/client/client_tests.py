@@ -39,8 +39,8 @@ import sys
 import time
 import warnings
 from collections import defaultdict
-from unittest import mock
 
+import mock
 import pytest
 from pytest_localserver.http import ContentServer
 from pytest_localserver.https import DEFAULT_CERTIFICATE
