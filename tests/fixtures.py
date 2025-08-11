@@ -46,10 +46,10 @@ import warnings
 import zlib
 from collections import defaultdict
 from typing import Optional
-from unittest import mock
 from urllib.request import pathname2url
 
 import jsonschema
+import mock
 import pytest
 from pytest_localserver.http import ContentServer
 from werkzeug.wrappers import Request, Response

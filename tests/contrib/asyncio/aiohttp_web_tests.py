@@ -32,8 +32,7 @@ import pytest  # isort:skip
 
 aiohttp = pytest.importorskip("aiohttp")  # isort:skip
 
-from unittest import mock
-
+import mock
 from multidict import MultiDict
 
 import elasticapm

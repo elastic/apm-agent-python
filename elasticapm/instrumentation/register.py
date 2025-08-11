@@ -28,6 +28,8 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import sys
+
 from elasticapm.utils.module_import import import_string
 
 _cls_register = {
@@ -68,28 +70,34 @@ _cls_register = {
     "elasticapm.instrumentation.packages.kafka.KafkaInstrumentation",
     "elasticapm.instrumentation.packages.grpc.GRPCClientInstrumentation",
     "elasticapm.instrumentation.packages.grpc.GRPCServerInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.aiohttp_client.AioHttpClientInstrumentation",
-    "elasticapm.instrumentation.packages.httpx.async.httpx.HttpxAsyncClientInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticSearchAsyncConnection",
-    "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticsearchAsyncTransportInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.asyncpg.AsyncPGInstrumentation",
-    "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",
-    "elasticapm.instrumentation.packages.tornado.TornadoHandleRequestExceptionInstrumentation",
-    "elasticapm.instrumentation.packages.tornado.TornadoRenderInstrumentation",
-    "elasticapm.instrumentation.packages.httpx.async.httpcore.HTTPCoreAsyncInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.aioredis.RedisConnectionPoolInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.aioredis.RedisPipelineInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.aioredis.RedisConnectionInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.aiomysql.AioMySQLInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.aiobotocore.AioBotocoreInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.starlette.StarletteServerErrorMiddlewareInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisAsyncioInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisPipelineInstrumentation",
-    "elasticapm.instrumentation.packages.asyncio.psycopg_async.AsyncPsycopgInstrumentation",
-    "elasticapm.instrumentation.packages.grpc.GRPCAsyncServerInstrumentation",
 }
+
+if sys.version_info >= (3, 7):
+    _cls_register.update(
+        [
+            "elasticapm.instrumentation.packages.asyncio.sleep.AsyncIOSleepInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aiohttp_client.AioHttpClientInstrumentation",
+            "elasticapm.instrumentation.packages.httpx.async.httpx.HttpxAsyncClientInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticSearchAsyncConnection",
+            "elasticapm.instrumentation.packages.asyncio.elasticsearch.ElasticsearchAsyncTransportInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aiopg.AioPGInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.asyncpg.AsyncPGInstrumentation",
+            "elasticapm.instrumentation.packages.tornado.TornadoRequestExecuteInstrumentation",
+            "elasticapm.instrumentation.packages.tornado.TornadoHandleRequestExceptionInstrumentation",
+            "elasticapm.instrumentation.packages.tornado.TornadoRenderInstrumentation",
+            "elasticapm.instrumentation.packages.httpx.async.httpcore.HTTPCoreAsyncInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aioredis.RedisConnectionPoolInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aioredis.RedisPipelineInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aioredis.RedisConnectionInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aiomysql.AioMySQLInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aiobotocore.AioBotocoreInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.starlette.StarletteServerErrorMiddlewareInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisAsyncioInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisPipelineInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.psycopg_async.AsyncPsycopgInstrumentation",
+            "elasticapm.instrumentation.packages.grpc.GRPCAsyncServerInstrumentation",
+        ]
+    )
 
 # These instrumentations should only be enabled if we're instrumenting via the
 # wrapper script, which calls register_wrapper_instrumentations() below.

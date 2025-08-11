@@ -31,9 +31,9 @@
 
 import os
 import time
-from unittest import mock
 
 import certifi
+import mock
 import pytest
 import urllib3.poolmanager
 from urllib3.exceptions import MaxRetryError, TimeoutError

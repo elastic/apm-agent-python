@@ -38,8 +38,8 @@ import pytest  # isort:skip
 starlette = pytest.importorskip("starlette")  # isort:skip
 
 import os
-from unittest import mock
 
+import mock
 import urllib3
 import wrapt
 from starlette.applications import Starlette
