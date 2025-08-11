@@ -205,7 +205,7 @@ volumes:
     driver: local
   pymongodata36:
     driver: local
-  pymongodata40:
+  pymongodata42:
     driver: local
   pyesdata7:
     driver: local
