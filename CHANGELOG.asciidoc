@@ -52,7 +52,7 @@ endif::[]
 * Fix asgi middleware distributed tracing {pull}2334[#2334]
 * Fix typing of start in Span / capture_span to float {pull}2335[#2335]
 * Fix azure instrumentation client_class and metrics sets invocation {pull}2337[#2337]
-* Fix mysql_connector instrumentation connection retrieval {pull}2334[#2334]
+* Fix mysql_connector instrumentation connection retrieval {pull}2344[#2344]
 * Remove spurious Django QuerySet evaluation in case of database errors {pull}2158[#2158]
 
 [[release-notes-6.23.0]]
