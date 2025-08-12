@@ -32,6 +32,29 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.24.0]]
+==== 6.24.0 - 2025-08-12
+
+[float]
+===== Features
+
+* Add support for recent sanic versions {pull}2190[#2190], {pull}2194[#2194]
+* Make server certificate verification mandatory in fips mode {pull}2227[#2227]
+* Add support Python 3.13 {pull}2216[#2216]
+* Add support for azure-data-tables package for azure instrumentation {pull}2187[#2187]
+* Add span links from SNS messages {pull}2363[#2363]
+
+[float]
+===== Bug fixes
+
+* Fix psycopg2 cursor execute and executemany signatures {pull}2331[#2331]
+* Fix psycopg cursor execute and executemany signatures {pull}2332[#2332]
+* Fix asgi middleware distributed tracing {pull}2334[#2334]
+* Fix typing of start in Span / capture_span to float {pull}2335[#2335]
+* Fix azure instrumentation client_class and metrics sets invocation {pull}2337[#2337]
+* Fix mysql_connector instrumentation connection retrieval {pull}2334[#2334]
+* Remove spurious Django QuerySet evaluation in case of database errors {pull}2158[#2158]
+
 [[release-notes-6.23.0]]
 ==== 6.23.0 - 2024-07-30
 

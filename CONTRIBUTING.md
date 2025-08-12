@@ -183,6 +183,7 @@ If you have commit access, the process is as follows:
 
 1. Update the version in `elasticapm/version.py` according to the scale of the change. (major, minor or patch)
 1. Update `CHANGELOG.asciidoc`. Rename the `Unreleased` section to the correct version (`vX.X.X`), and nest under the appropriate sub-heading, e.g., `Python Agent version 5.x`.
+1. Update `docs/release-notes/`.
 1. For Majors: [Create an issue](https://github.com/elastic/website-requests/issues/new) to request an update of the [EOL table](https://www.elastic.co/support/eol).
 1. For Majors: Add the new major version to `conf.yaml` in the [elastic/docs](https://github.com/elastic/docs) repo.
 1. Commit changes with message `update CHANGELOG and bump version to X.Y.Z`
