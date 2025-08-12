@@ -29,8 +29,8 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
-from unittest import mock
 
+import mock
 import urllib3
 
 import elasticapm.utils.cloud

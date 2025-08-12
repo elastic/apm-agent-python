@@ -32,7 +32,7 @@
 # Installing an app is not reversible, so using this instrumentation "for real" would
 # pollute the Django instance used by pytest.
 
-from unittest import mock
+import mock
 
 from elasticapm.instrumentation.packages.django import DjangoAutoInstrumentation
 
