@@ -36,7 +36,7 @@ To check for security updates, go to [Security announcements for the Elastic sta
 * Fix asgi middleware distributed tracing [#2334](https://github.com/elastic/apm-agent-python/pull/2334)
 * Fix typing of start in Span / capture_span to float [#2335](https://github.com/elastic/apm-agent-python/pull/2335)
 * Fix azure instrumentation client_class and metrics sets invocation [#2337](https://github.com/elastic/apm-agent-python/pull/2337)
-* Fix mysql_connector instrumentation connection retrieval [#2334](https://github.com/elastic/apm-agent-python/pull/2334)
+* Fix mysql_connector instrumentation connection retrieval [#2344](https://github.com/elastic/apm-agent-python/pull/2344)
 * Remove spurious Django QuerySet evaluation in case of database errors [#2158](https://github.com/elastic/apm-agent-python/pull/2158)
 
 ## 6.23.0 [elastic-apm-python-agent-6230-release-notes]
