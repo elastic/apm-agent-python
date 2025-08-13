@@ -11,6 +11,11 @@ on:
         description: "The git ref of elastic/apm-agent-python to run test workflow from."
         required: false
         type: string
+      skip-build:
+        description: "Skip the build distribution step"
+        required: false
+        type: boolean
+        default: false
   pull_request:
     paths-ignore:
       - "**/*.md"
@@ -29,12 +34,18 @@ on:
         description: "Run the full matrix"
         required: true
         type: boolean
+      skip-build:
+        description: "Skip the build distribution step"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   build-distribution:
+    if: ${{ !inputs.skip-build }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

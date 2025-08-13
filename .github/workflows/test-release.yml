@@ -15,6 +15,11 @@ on:
         description: "Whether to run the workfow"
         required: true
         type: boolean
+      skip-build:
+        description: "Skip the build distribution step"
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       full-matrix:
@@ -25,6 +30,11 @@ on:
         description: "Whether to run the workfow"
         required: true
         type: boolean
+      skip-build:
+        description: "Skip the build distribution step"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -32,6 +42,7 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       full-matrix: ${{ inputs.full-matrix }}
+      skip-build: ${{ inputs.skip-build }}
 
   run-if-disabled:
     if: ${{ ! inputs.enabled }}

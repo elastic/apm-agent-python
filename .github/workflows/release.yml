@@ -11,11 +11,27 @@ permissions:
   contents: read
 
 jobs:
+  build-distribution:
+    permissions:
+      attestations: write
+      id-token: write
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-distribution
+      - name: generate build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2.4.0
+        with:
+          subject-path: "${{ github.workspace }}/build/dist/elastic-apm-python-lambda-layer.zip"
+
   test:
     uses: ./.github/workflows/test-release.yml
+    needs: build-distribution
     with:
       full-matrix: true
       enabled: ${{ startsWith(github.ref, 'refs/tags') }}
+      skip-build: true
 
   packages:
     permissions:
@@ -55,20 +71,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
         with:
           repository-url: https://test.pypi.org/legacy/
-
-  build-distribution:
-    permissions:
-      attestations: write
-      id-token: write
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/build-distribution
-      - name: generate build provenance
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2.4.0
-        with:
-          subject-path: "${{ github.workspace }}/build/dist/elastic-apm-python-lambda-layer.zip"
 
   publish-lambda-layers:
     permissions:
