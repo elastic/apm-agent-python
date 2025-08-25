@@ -16,7 +16,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: generate
         uses: elastic/oblt-actions/version-framework@v1
         with:
@@ -40,7 +40,7 @@ jobs:
       max-parallel: 10
       matrix: ${{ fromJSON(needs.create-matrix.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: check that python has fips mode enabled
         run: |
           python3 -c 'import _hashlib; assert _hashlib.get_fips_mode() == 1'
