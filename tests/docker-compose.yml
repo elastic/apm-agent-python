@@ -170,8 +170,6 @@ services:
       - "9092:9092"
     volumes:
       - "kafka_data:/var/lib/kafka/data"
-    environment:
-      - ALLOW_PLAINTEXT_LISTENER=yes
 
   run_tests:
     image: ${REGISTRY:-elasticobservability}/${IMAGE_NAME:-apm-agent-python-testing}:${PYTHON_VERSION}
