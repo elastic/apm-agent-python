@@ -1,6 +1,16 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/apm/agent/python/current/lambda-support.html
+applies_to:
+  stack:
+  serverless:
+    observability:
+  product:
+    apm_agent_python: ga
+products:
+  - id: cloud-serverless
+  - id: observability
+  - id: apm
 sub:
   apm-lambda-ext-v: ver-1-5-7
   apm-python-v: ver-6-23-0

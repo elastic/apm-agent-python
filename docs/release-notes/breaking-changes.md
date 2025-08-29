@@ -1,8 +1,19 @@
 ---
 navigation_title: "Breaking changes"
+applies_to:
+  stack:
+  serverless:
+    observability:
+  product:
+    apm_agent_python: ga
+products:
+  - id: cloud-serverless
+  - id: observability
+  - id: apm
 ---
 
 # Elastic APM Python Agent breaking changes [elastic-apm-python-agent-breaking-changes]
+
 Before you upgrade, carefully review the Elastic APM RPython Agent breaking changes and take the necessary steps to mitigate any issues.
 
 % To learn how to upgrade, check out <upgrade docs>.
