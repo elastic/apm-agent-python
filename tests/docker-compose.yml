@@ -169,7 +169,7 @@ services:
     ports:
       - "9092:9092"
     volumes:
-      - "kafka_data:/var/lib/kafka"
+      - "kafka_data:/var/lib/kafka/data"
     environment:
       - ALLOW_PLAINTEXT_LISTENER=yes
 
