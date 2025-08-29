@@ -42,7 +42,7 @@ To configure the agent using initialization arguments and Sanic’s Configuratio
 ```python
 # Create a file named external_config.py in your application
 # If you want this module based configuration to be used for APM, prefix them with ELASTIC_APM_
-ELASTIC_APM_SERVER_URL = "https://serverurl.apm.com:443"
+ELASTIC_APM_SERVER_URL = "https://serverurl.example.com:443"
 ELASTIC_APM_SECRET_TOKEN = "sometoken"
 ```
 
