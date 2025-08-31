@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/build-distribution
       - name: generate build provenance
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2.4.0
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a  # v3.0.0
         with:
           subject-path: "${{ github.workspace }}/build/dist/elastic-apm-python-lambda-layer.zip"
 
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/packages
       - name: generate build provenance
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2.4.0
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a  # v3.0.0
         with:
           subject-path: "${{ github.workspace }}/dist/*"
 
@@ -160,7 +160,7 @@ jobs:
             AGENT_DIR=./build/dist/package/python
 
       - name: generate build provenance (containers)
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be  # v2.4.0
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a  # v3.0.0
         with:
           subject-name: "${{ env.DOCKER_IMAGE_NAME }}"
           subject-digest: ${{ steps.docker-push.outputs.digest }}
