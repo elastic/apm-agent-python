@@ -1,6 +1,12 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/apm/agent/python/current/supported-technologies.html
+applies_to:
+  stack:
+  serverless:
+    observability:
+  product:
+    apm_agent_python: ga
 ---
 
 # Supported technologies [supported-technologies]

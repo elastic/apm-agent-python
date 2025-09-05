@@ -1,5 +1,11 @@
 ---
 navigation_title: "Known issues"
+applies_to:
+  stack:
+  serverless:
+    observability:
+  product:
+    apm_agent_python: ga
 ---
 
 # Elastic APM Python Agent known issues [elastic-apm-python-agent-known-issues]

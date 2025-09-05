@@ -1,6 +1,12 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/apm/agent/python/current/opentelemetry-bridge.html
+applies_to:
+  stack:
+  serverless:
+    observability:
+  product:
+    apm_agent_python: ga
 ---
 
 # OpenTelemetry API Bridge [opentelemetry-bridge]

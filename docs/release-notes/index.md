@@ -3,6 +3,12 @@ navigation_title: "Elastic APM Python Agent"
 mapped_pages:
   - https://www.elastic.co/guide/en/apm/agent/python/current/release-notes-6.x.html
   - https://www.elastic.co/guide/en/apm/agent/python/current/release-notes.html
+applies_to:
+  stack:
+  serverless:
+    observability:
+  product:
+    apm_agent_python: ga
 ---
 
 # Elastic APM Python Agent release notes [elastic-apm-python-agent-release-notes]
