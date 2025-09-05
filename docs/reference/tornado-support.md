@@ -7,10 +7,6 @@ applies_to:
     observability:
   product:
     apm_agent_python: ga
-products:
-  - id: cloud-serverless
-  - id: observability
-  - id: apm
 ---
 
 # Tornado Support [tornado-support]

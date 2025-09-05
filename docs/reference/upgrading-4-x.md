@@ -7,10 +7,6 @@ applies_to:
     observability:
   product:
     apm_agent_python: ga
-products:
-  - id: cloud-serverless
-  - id: observability
-  - id: apm
 ---
 
 # Upgrading to version 4 of the agent [upgrading-4-x]

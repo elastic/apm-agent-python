@@ -6,10 +6,6 @@ applies_to:
     observability:
   product:
     apm_agent_python: ga
-products:
-  - id: cloud-serverless
-  - id: observability
-  - id: apm
 ---
 
 # Elastic APM Python Agent deprecations [elastic-apm-python-agent-deprecations]
