@@ -7,10 +7,6 @@ applies_to:
     observability:
   product:
     apm_agent_python: ga
-products:
-  - id: cloud-serverless
-  - id: observability
-  - id: apm
 sub:
   apm-lambda-ext-v: ver-1-5-7
   apm-python-v: ver-6-23-0
