@@ -6,7 +6,7 @@ applies_to:
   serverless:
     observability:
   product:
-    apm_agent_python: ga
+    apm_agent_python: preview
 ---
 
 # Wrapper Support [wrapper-support]
