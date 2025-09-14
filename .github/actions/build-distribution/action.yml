@@ -6,7 +6,7 @@ description: Run the build distribution
 runs:
   using: "composite"
   steps:
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: "3.10"
 
