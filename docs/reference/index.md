@@ -34,4 +34,4 @@ APM Agents work in conjunction with the [APM Server](docs-content://solutions/ob
 
 ## Troubleshooting
 
-If you're experiencing issues with the APM Python agent, refer to [Troubleshooting](docs-content:///troubleshoot/observability/apm-agent-python/apm-python-agent.md).
+If you're experiencing issues with the APM Python agent, refer to [Troubleshooting](docs-content://troubleshoot/observability/apm-agent-python/apm-python-agent.md).
