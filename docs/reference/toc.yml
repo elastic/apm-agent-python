@@ -31,3 +31,5 @@ toc:
       - file: upgrading-6-x.md
       - file: upgrading-5-x.md
       - file: upgrading-4-x.md
+  - title: Troubleshooting
+    crosslink: docs-content://troubleshoot/observability/apm-agent-python/apm-python-agent.md
