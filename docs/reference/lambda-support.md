@@ -40,13 +40,13 @@ To add the layers to your Lambda function through the AWS Management Console:
 3. Choose the *Specify an ARN* radio button
 4. Copy and paste the following ARNs of the {{apm-lambda-ext}} layer and the APM agent layer in the *Specify an ARN* text input:
     * APM Extension layer:
-      ```subs=true
+      ``` subs=true
       arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-extension-{{apm-lambda-ext-v}}-{ARCHITECTURE}:1 <1>
       ```
       1. Replace `{AWS_REGION}` with the AWS region of your Lambda function and `{ARCHITECTURE}` with its architecture.
 
     * APM agent layer:
-      ```subs=true
+      ``` subs=true
       arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:{{apm-python-layer-v}} <1>
       ```
       1. Replace `{AWS_REGION}` with the AWS region of your Lambda function.
