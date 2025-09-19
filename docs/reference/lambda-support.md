@@ -8,8 +8,8 @@ applies_to:
   product:
     apm_agent_python: ga
 sub:
-  apm-lambda-ext-v: ver-1-5-7
-  apm-python-v: ver-6-23-0
+  apm-lambda-ext-v: ver-1-6-0
+  apm-python-v: ver-6-24-0
 ---
 
 # Monitoring AWS Lambda Python Functions [lambda-support]
@@ -46,9 +46,11 @@ To add the layers to your Lambda function through the AWS Management Console:
 
     * APM agent layer:
       ```
-      arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:1 <1>
+      arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:{LAYER_VERSION} <1>
       ```
-      1. Replace `{AWS_REGION}` with the AWS region of your Lambda function.
+      1. Replace `{AWS_REGION}` with the AWS region of your Lambda function. While the version of the layer `{LAYER_VERSION}`is
+         usually `1`, refer to the ARNs listed in [Github releases](https://github.com/elastic/apm-agent-python/releases) to get
+         the exact one.
 
     ![image of choosing a layer in AWS Console](images/choose-a-layer.png "")
 5. Click the *Add* button
@@ -60,10 +62,12 @@ To add the Layer ARNs of the {{apm-lambda-ext}} and the APM agent through the AW
 ```bash
 aws lambda update-function-configuration --function-name yourLambdaFunctionName \
 --layers arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-extension-{{apm-lambda-ext-v}}-{ARCHITECTURE}:1 \ <1>
-arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:1 <2>
+arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:{LAYER_VERSION} <2>
 ```
 1. Replace `{AWS_REGION}` with the AWS region of your Lambda function and `{ARCHITECTURE}` with its architecture.
-2. Replace `{AWS_REGION}` with the AWS region of your Lambda function.
+2. Replace `{AWS_REGION}` with the AWS region of your Lambda function. While the version of the layer `{LAYER_VERSION}`is
+   usually `1`, refer to the ARNs listed in [Github releases](https://github.com/elastic/apm-agent-python/releases) to get
+   the exact one.
 ::::::
 
 ::::::{tab-item} SAM
@@ -78,11 +82,13 @@ Resources:
       ...
       Layers:
           - arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-extension-{{apm-lambda-ext-v}}-{ARCHITECTURE}:1 <1>
-          - arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:1 <2>
+          - arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:{LAYER_VERSION} <2>
 ...
 ```
 1. Replace `{AWS_REGION}` with the AWS region of your Lambda function and `{ARCHITECTURE}` with its architecture.
-2. Replace `{AWS_REGION}` with the AWS region of your Lambda function.
+2. Replace `{AWS_REGION}` with the AWS region of your Lambda function. While the version of the layer `{LAYER_VERSION}`is
+   usually `1`, refer to the ARNs listed in [Github releases](https://github.com/elastic/apm-agent-python/releases) to get
+   the exact one.
 ::::::
 
 ::::::{tab-item} Serverless
@@ -95,11 +101,13 @@ functions:
     handler: ...
     layers:
       - arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-extension-{{apm-lambda-ext-v}}-{ARCHITECTURE}:1 <1>
-      - arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:1 <2>
+      - arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:{LAYER_VERSION} <2>
 ...
 ```
 1. Replace `{AWS_REGION}` with the AWS region of your Lambda function and `{ARCHITECTURE}` with its architecture.
-2. Replace `{AWS_REGION}` with the AWS region of your Lambda function.
+2. Replace `{AWS_REGION}` with the AWS region of your Lambda function. While the version of the layer `{LAYER_VERSION}`is
+   usually `1`, refer to the ARNs listed in [Github releases](https://github.com/elastic/apm-agent-python/releases) to get
+   the exact one.
 ::::::
 
 ::::::{tab-item} Terraform
@@ -109,11 +117,13 @@ To add the{{apm-lambda-ext}} and the APM agent to your function add the ARNs to 
 ...
 resource "aws_lambda_function" "your_lambda_function" {
   ...
-  layers = ["arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-extension-{{apm-lambda-ext-v}}-{ARCHITECTURE}:1", "arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:1"] <1>
+  layers = ["arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-extension-{{apm-lambda-ext-v}}-{ARCHITECTURE}:1", "arn:aws:lambda:{AWS_REGION}:267093732750:layer:elastic-apm-python-{{apm-python-v}}:{LAYER_VERSION}"] <1>
 }
 ...
 ```
-1. Replace `{AWS_REGION}` with the AWS region of your Lambda function and `{ARCHITECTURE}` with its architecture.
+1. Replace `{AWS_REGION}` with the AWS region of your Lambda function. While the version of the layer `{LAYER_VERSION}`is
+   usually `1`, refer to the ARNs listed in [Github releases](https://github.com/elastic/apm-agent-python/releases) to get
+   the exact one.
 ::::::
 
 ::::::{tab-item} Container Image
