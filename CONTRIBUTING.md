@@ -200,3 +200,4 @@ If you have commit access, the process is as follows:
 1. Edit and publish the [draft Github release](https://github.com/elastic/apm-agent-python/releases)
    created by Github Actions. Substitute the generated changelog with one hand written into the body of the
    release.
+1. Update substitutions variables in `docs/reference/lambda-support.md`.
