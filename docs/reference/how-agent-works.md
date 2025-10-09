@@ -40,7 +40,7 @@ To collect data from database drivers, HTTP libraries etc., we instrument certai
 * the executed query for database drivers
 * the fetched URL for HTTP libraries
 
-We use a 3rd party library, [`wrapt`](https://github.com/GrahamDumpleton/wrapt), to wrap the callables. You can read more on how `wrapt` works in Graham Dumpleton’s excellent series of [blog posts](http://blog.dscpl.com.au/search/label/wrapt).
+We use a 3rd party library, [`wrapt`](https://github.com/GrahamDumpleton/wrapt), to wrap the callables. You can read more on how `wrapt` works in Graham Dumpleton’s excellent series of [blog posts](https://grahamdumpleton.me/posts/?search=wrapt).
 
 Instrumentations are set up automatically and do not require any code changes. See [Automatic Instrumentation](/reference/supported-technologies.md#automatic-instrumentation) to learn more about which libraries we support.
 
