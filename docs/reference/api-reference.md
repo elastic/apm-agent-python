@@ -223,7 +223,7 @@ elasticapm.get_trace_parent_header()
 apm_agent_python: ga 1.0.0
 ```
 
-Instruments libraries automatically. This includes a wide range of standard library and 3rd party modules. A list of instrumented modules can be found in `elasticapm.instrumentation.register`. This function should be called as early as possibly in the startup of your application. For [supported frameworks](/reference/supported-technologies.md#framework-support), this is called automatically. Example:
+Instruments libraries automatically. This includes a wide range of standard library and 3rd party modules. A list of instrumented modules can be found in `elasticapm.instrumentation.register`. This function should be called as early as possible in the startup of your application. For [supported frameworks](/reference/supported-technologies.md#framework-support), this is called automatically. Example:
 
 ```python
 import elasticapm
@@ -308,7 +308,7 @@ elasticapm.set_transaction_outcome(OUTCOME.UNKNOWN)
 
 * `outcome`: One of `"success"`, `"failure"` or `"unknown"`. Can be omitted if `http_status_code` is provided.
 * `http_status_code`: if the transaction represents an HTTP response, its status code can be provided to determine the `outcome` automatically.
-* `override`: if `True` (the default), any previously set `outcome` will be overriden. If `False`, the outcome will only be set if it was not set before.
+* `override`: if `True` (the default), any previously set `outcome` will be overridden. If `False`, the outcome will only be set if it was not set before.
 
 
 ### `elasticapm.get_transaction_id()` [api-get-transaction-id]
@@ -436,7 +436,7 @@ def coffee_maker(strength):
 * `name`: The name of the span. Defaults to the function name if used as a decorator.
 * `span_type`: (**optional**) The type of the span, usually in a dot-separated hierarchy of `type`, `subtype`, and `action`, e.g. `db.mysql.query`. Alternatively, type, subtype and action can be provided as three separate arguments, see `span_subtype` and `span_action`.
 * `skip_frames`: (**optional**) The number of stack frames to skip when collecting stack traces. Defaults to `0`.
-* `leaf`: (**optional**) if `True`, all spans nested bellow this span will be ignored. Defaults to `False`.
+* `leaf`: (**optional**) if `True`, all spans nested below this span will be ignored. Defaults to `False`.
 * `labels`: (**optional**) a dictionary of labels. Keys must be strings, values can be strings, booleans, or numerical (`int`, `float`, `decimal.Decimal`). Defaults to `None`.
 * `span_subtype`: (**optional**) subtype of the span, e.g. name of the database. Defaults to `None`.
 * `span_action`: (**optional**) action of the span, e.g. `query`. Defaults to `None`.
@@ -471,7 +471,7 @@ async def coffee_maker(strength):
 * `name`: The name of the span. Defaults to the function name if used as a decorator.
 * `span_type`: (**optional**) The type of the span, usually in a dot-separated hierarchy of `type`, `subtype`, and `action`, e.g. `db.mysql.query`. Alternatively, type, subtype and action can be provided as three separate arguments, see `span_subtype` and `span_action`.
 * `skip_frames`: (**optional**) The number of stack frames to skip when collecting stack traces. Defaults to `0`.
-* `leaf`: (**optional**) if `True`, all spans nested bellow this span will be ignored. Defaults to `False`.
+* `leaf`: (**optional**) if `True`, all spans nested below this span will be ignored. Defaults to `False`.
 * `labels`: (**optional**) a dictionary of labels. Keys must be strings, values can be strings, booleans, or numerical (`int`, `float`, `decimal.Decimal`). Defaults to `None`.
 * `span_subtype`: (**optional**) subtype of the span, e.g. name of the database. Defaults to `None`.
 * `span_action`: (**optional**) action of the span, e.g. `query`. Defaults to `None`.
