@@ -32,7 +32,7 @@ import datetime
 import types as python_types
 import typing
 import urllib.parse
-from typing import Optional
+from typing import Optional, Union
 
 from opentelemetry.context import Context
 from opentelemetry.sdk import trace as oteltrace
@@ -157,13 +157,19 @@ class Span(oteltrace.Span):
         """
         return self.elastic_span.transaction.is_sampled and not self.elastic_span.ended_time
 
-    def set_status(self, status: Status) -> None:
+    def set_status(self, status: Union[Status, StatusCode], description: Optional[str] = None) -> None:
         """Sets the Status of the Span. If used, this will override the default
         Span status.
         """
-        if status.status_code == StatusCode.ERROR:
+        # Handle both Status objects and StatusCode enums
+        if isinstance(status, Status):
+            status_code = status.status_code
+        else:
+            status_code = status
+
+        if status_code == StatusCode.ERROR:
             self.elastic_span.outcome = constants.OUTCOME.FAILURE
-        elif status.status_code == StatusCode.OK:
+        elif status_code == StatusCode.OK:
             self.elastic_span.outcome = constants.OUTCOME.SUCCESS
         else:
             self.elastic_span.outcome = constants.OUTCOME.UNKNOWN

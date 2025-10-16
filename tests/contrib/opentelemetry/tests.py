@@ -34,6 +34,7 @@ pytest.importorskip("opentelemetry.sdk")  # isort:skip
 
 from opentelemetry.trace import Link, SpanContext, SpanKind, TraceFlags
 from opentelemetry.trace.propagation import _SPAN_KEY
+from opentelemetry.trace.status import Status, StatusCode
 
 import elasticapm.contrib.opentelemetry.context as context
 import elasticapm.contrib.opentelemetry.trace as trace
@@ -155,4 +156,52 @@ def test_span_links(tracer: Tracer):
     assert span["links"][0]["span_id"] == "0011223344556677"
 
 
-# TODO Add some span subtype testing?
+def test_set_status_with_status_object(tracer: Tracer):
+    """Test set_status with Status object (original API)"""
+    with tracer.start_as_current_span("test") as span:
+        span.set_status(Status(StatusCode.OK))
+
+    client = tracer.client
+    transaction = client.events[constants.TRANSACTION][0]
+    assert transaction["outcome"] == "success"
+
+
+def test_set_status_with_status_code(tracer: Tracer):
+    """Test set_status with StatusCode enum (new API)"""
+    with tracer.start_as_current_span("test") as span:
+        span.set_status(StatusCode.ERROR)
+
+    client = tracer.client
+    transaction = client.events[constants.TRANSACTION][0]
+    assert transaction["outcome"] == "failure"
+
+
+def test_set_status_with_status_code_and_description(tracer: Tracer):
+    """Test set_status with StatusCode enum and optional description"""
+    with tracer.start_as_current_span("test") as span:
+        span.set_status(StatusCode.OK, "Everything is fine")
+
+    client = tracer.client
+    transaction = client.events[constants.TRANSACTION][0]
+    assert transaction["outcome"] == "success"
+
+
+def test_set_status_unset(tracer: Tracer):
+    """Test set_status with UNSET status code"""
+    with tracer.start_as_current_span("test") as span:
+        span.set_status(StatusCode.UNSET)
+
+    client = tracer.client
+    transaction = client.events[constants.TRANSACTION][0]
+    assert transaction["outcome"] == "unknown"
+
+
+def test_set_status_on_span(tracer: Tracer):
+    """Test set_status on a child span (not transaction)"""
+    with tracer.start_as_current_span("test"):
+        with tracer.start_as_current_span("testspan") as span:
+            span.set_status(StatusCode.ERROR)
+
+    client = tracer.client
+    span_event = client.events[constants.SPAN][0]
+    assert span_event["outcome"] == "failure"
