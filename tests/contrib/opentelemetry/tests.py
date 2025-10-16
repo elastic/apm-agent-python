@@ -157,7 +157,6 @@ def test_span_links(tracer: Tracer):
 
 
 def test_set_status_with_status_object(tracer: Tracer):
-    """Test set_status with Status object (original API)"""
     with tracer.start_as_current_span("test") as span:
         span.set_status(Status(StatusCode.OK))
 
@@ -167,7 +166,6 @@ def test_set_status_with_status_object(tracer: Tracer):
 
 
 def test_set_status_with_status_code(tracer: Tracer):
-    """Test set_status with StatusCode enum (new API)"""
     with tracer.start_as_current_span("test") as span:
         span.set_status(StatusCode.ERROR)
 
@@ -177,7 +175,6 @@ def test_set_status_with_status_code(tracer: Tracer):
 
 
 def test_set_status_with_status_code_and_description(tracer: Tracer):
-    """Test set_status with StatusCode enum and optional description"""
     with tracer.start_as_current_span("test") as span:
         span.set_status(StatusCode.OK, "Everything is fine")
 
@@ -187,7 +184,6 @@ def test_set_status_with_status_code_and_description(tracer: Tracer):
 
 
 def test_set_status_unset(tracer: Tracer):
-    """Test set_status with UNSET status code"""
     with tracer.start_as_current_span("test") as span:
         span.set_status(StatusCode.UNSET)
 
@@ -205,3 +201,6 @@ def test_set_status_on_span(tracer: Tracer):
     client = tracer.client
     span_event = client.events[constants.SPAN][0]
     assert span_event["outcome"] == "failure"
+
+
+# TODO Add some span subtype testing?
