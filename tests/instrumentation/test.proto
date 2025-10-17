@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package test;
+
+service TestService {
+  rpc UnaryUnary (UnaryUnaryRequest) returns (UnaryUnaryResponse) {}
+}
+
+message UnaryUnaryRequest {
+  string message = 1;
+}
+
+message UnaryUnaryResponse {
+  string message = 1;
+} 
