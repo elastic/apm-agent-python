@@ -31,6 +31,7 @@ import sys
 
 from elasticapm.base import Client, get_client  # noqa: F401
 from elasticapm.conf import setup_logging  # noqa: F401
+from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401 E402
 from elasticapm.contrib.serverless import capture_serverless  # noqa: F401
 from elasticapm.instrumentation.control import instrument, uninstrument  # noqa: F401
 from elasticapm.traces import (  # noqa: F401
@@ -49,7 +50,30 @@ from elasticapm.traces import (  # noqa: F401
 )
 from elasticapm.utils.disttracing import trace_parent_from_headers, trace_parent_from_string  # noqa: F401
 
-__all__ = ("VERSION", "Client")
+__all__ = (
+    "VERSION",
+    "Client",
+    "get_client",
+    "setup_logging",
+    "capture_serverless",
+    "instrument",
+    "uninstrument",
+    "capture_span",
+    "get_span_id",
+    "get_trace_id",
+    "get_trace_parent_header",
+    "get_transaction_id",
+    "label",
+    "set_context",
+    "set_custom_context",
+    "set_transaction_name",
+    "set_transaction_outcome",
+    "set_transaction_result",
+    "set_user_context",
+    "trace_parent_from_headers",
+    "trace_parent_from_string",
+    "async_capture_span",
+)
 
 _activation_method = None
 
@@ -64,5 +88,3 @@ except Exception:
 
 if sys.version_info <= (3, 5):
     raise DeprecationWarning("The Elastic APM agent requires Python 3.6+")
-
-from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401 E402
