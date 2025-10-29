@@ -59,19 +59,6 @@ services:
   redis:
     image: redis
 
-  elasticsearch6:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.0
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200"]
-    environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - "network.host="
-      - "transport.host=127.0.0.1"
-      - "http.host=0.0.0.0"
-      - "xpack.security.enabled=false"
-    volumes:
-      - pyesdata6:/usr/share/elasticsearch/data
-
   elasticsearch7:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
     healthcheck:
@@ -100,32 +87,6 @@ services:
       - "action.destructive_requires_name=false" # allow for easy cleanup by calling DELETE *
     volumes:
       - pyesdata8:/usr/share/elasticsearch/data
-
-  elasticsearch5:
-    image: docker.elastic.co/elasticsearch/elasticsearch:5.6.16
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200"]
-    environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - "network.host="
-      - "transport.host=127.0.0.1"
-      - "http.host=0.0.0.0"
-      - "xpack.security.enabled=false"
-    volumes:
-      - pyesdata5:/usr/share/elasticsearch/data
-
-  elasticsearch2:
-    image: elasticsearch:2
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200"]
-    environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - "network.host="
-      - "transport.host=127.0.0.1"
-      - "http.host=0.0.0.0"
-      - "xpack.security.enabled=false"
-    volumes:
-      - pyesdata2:/usr/share/elasticsearch/data
 
   mssql:
     image: mcr.microsoft.com/mssql/server
@@ -187,9 +148,6 @@ services:
     environment:
       ES_8_URL: 'http://elasticsearch8:9200'
       ES_7_URL: 'http://elasticsearch7:9200'
-      ES_6_URL: 'http://elasticsearch6:9200'
-      ES_5_URL: 'http://elasticsearch5:9200'
-      ES_2_URL: 'http://elasticsearch2:9200'
 
 
 volumes:
