@@ -31,6 +31,7 @@ FRAMEWORK:
   - pylibmc-newest
   - elasticsearch-7
   - elasticsearch-8
+  - elasticsearch-9
   - cassandra-newest
   - psutil-newest
   #- eventlet-newest

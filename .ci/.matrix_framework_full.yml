@@ -65,6 +65,7 @@ FRAMEWORK:
   #- eventlet-newest
   - elasticsearch-7
   - elasticsearch-8
+  - elasticsearch-9
   - gevent-newest
   - aiohttp-3.0
   - aiohttp-newest
