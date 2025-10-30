@@ -165,12 +165,6 @@ volumes:
     driver: local
   pyesdata8:
     driver: local
-  pyesdata6:
-    driver: local
-  pyesdata5:
-    driver: local
-  pyesdata2:
-    driver: local
   pycassandradata3:
     driver: local
   pymssqldata:
