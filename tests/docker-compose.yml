@@ -60,7 +60,7 @@ services:
     image: redis
 
   elasticsearch7:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.29
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200"]
     environment:
@@ -73,7 +73,7 @@ services:
       - pyesdata7:/usr/share/elasticsearch/data
 
   elasticsearch8:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.4.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.6
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200"]
     ports:
