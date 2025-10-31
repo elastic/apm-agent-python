@@ -37,6 +37,9 @@ exclude:
     FRAMEWORK: celery-5-django-5
   - VERSION: python-3.9
     FRAMEWORK: celery-5-django-5
+  # Elasticsearch
+  - VERSION: python-3.6
+    FRAMEWORK: elasticsearch-9
   # Flask
   - VERSION: pypy-3
     FRAMEWORK: flask-0.11 # see https://github.com/pallets/flask/commit/6e46d0cd, 0.11.2 was never released

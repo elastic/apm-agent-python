@@ -29,9 +29,9 @@ FRAMEWORK:
   - pyodbc-newest
   - memcached-newest
   - pylibmc-newest
-  - elasticsearch-2
   - elasticsearch-7
   - elasticsearch-8
+  - elasticsearch-9
   - cassandra-newest
   - psutil-newest
   #- eventlet-newest

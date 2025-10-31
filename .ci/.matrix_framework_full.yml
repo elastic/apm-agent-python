@@ -63,11 +63,9 @@ FRAMEWORK:
   - psutil-5.0
   - psutil-4.0
   #- eventlet-newest
-  - elasticsearch-2
-  - elasticsearch-5
-  - elasticsearch-6
   - elasticsearch-7
   - elasticsearch-8
+  - elasticsearch-9
   - gevent-newest
   - aiohttp-3.0
   - aiohttp-newest
