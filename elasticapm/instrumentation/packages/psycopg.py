@@ -79,7 +79,7 @@ class PGConnectionProxy(ConnectionProxy):
 class PsycopgInstrumentation(DbApi2Instrumentation):
     name = "psycopg"
 
-    instrument_list = [("psycopg", "connect")]
+    instrument_list = [("psycopg", "connect"), ("psycopg", "Connection.connect")]
 
     def call(self, module, method, wrapped, instance, args, kwargs):
         signature = "psycopg.connect"

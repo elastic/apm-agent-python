@@ -25,6 +25,7 @@ FRAMEWORK:
   #- aioredis-2  # not supported yet
   - psycopg-newest
   - psycopg2-newest
+  - psycopg_pool-newest
   - pymssql-newest
   - pyodbc-newest
   - memcached-newest
