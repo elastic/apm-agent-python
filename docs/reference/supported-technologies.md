@@ -324,7 +324,7 @@ Collected trace data:
 
 #### MongoDB [automatic-instrumentation-db-mongodb]
 
-Library: `pymongo` `>=2.9,<5`
+Library: `pymongo` (`>=2.9,<5`)
 
 Instrumented methods:
 
@@ -482,7 +482,7 @@ Instrumented methods:
 
 * `kafka.KafkaProducer.send`,
 * `kafka.KafkaConsumer.poll`,
-* `kafka.KafkaConsumer.\__next__`
+* `kafka.KafkaConsumer.__next__`
 
 Collected trace data:
 
