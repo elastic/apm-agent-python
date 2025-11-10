@@ -82,28 +82,28 @@ We support these Flask versions:
 
 We support these aiohttp versions:
 
-* 3.0+
+* 3.x
 
 
 ### Tornado [supported-tornado]
 
 We support these tornado versions:
 
-* 6.0+
+* 6.x
 
 
 ### Sanic [supported-sanic]
 
 We support these sanic versions:
 
-* 20.12.2+
+* >20.12.2,<26
 
 
 ### Starlette/FastAPI [supported-starlette]
 
 We support these Starlette versions:
 
-* 0.13.0+
+* >0.13.0,<1
 
 Any FastAPI version which uses a supported Starlette version should also be supported.
 
@@ -112,7 +112,7 @@ Any FastAPI version which uses a supported Starlette version should also be supp
 
 We support these `grpcio` versions:
 
-* 1.24.0+
+* >1.24.0,<2
 
 
 ## Automatic Instrumentation [automatic-instrumentation]
@@ -180,7 +180,7 @@ Collected trace data:
 
 #### MySQLdb [automatic-instrumentation-db-mysql]
 
-Library: `MySQLdb`
+Library: `MySQLdb` (`<2`)
 
 Instrumented methods:
 
@@ -195,7 +195,7 @@ Collected trace data:
 
 #### mysql-connector [automatic-instrumentation-db-mysql-connector]
 
-Library: `mysql-connector-python`
+Library: `mysql-connector-python` (`<9`)
 
 Instrumented methods:
 
@@ -210,7 +210,7 @@ Collected trace data:
 
 #### pymysql [automatic-instrumentation-db-pymysql]
 
-Library: `pymysql`
+Library: `pymysql` (`<2`)
 
 Instrumented methods:
 
@@ -225,7 +225,7 @@ Collected trace data:
 
 #### aiomysql [automatic-instrumentation-db-aiomysql]
 
-Library: `aiomysql`
+Library: `aiomysql` (`<1`)
 
 Instrumented methods:
 
@@ -236,9 +236,9 @@ Collected trace data:
 * parametrized SQL query
 
 
-#### PostgreSQL [automatic-instrumentation-db-postgres]
+#### PostgreSQL Psycopg2 [automatic-instrumentation-db-postgres]
 
-Library: `psycopg2`, `psycopg2-binary` (`>=2.9`)
+Library: `psycopg2`, `psycopg2-binary` (`>=2.9,<3`)
 
 Instrumented methods:
 
@@ -250,10 +250,23 @@ Collected trace data:
 
 * parametrized SQL query
 
+#### PostgreSQL Psycopg [automatic-instrumentation-db-postgres-psycopg]
+
+Library: `psycopg`, `psycopg-binary` (`>3.0.0,<4`)
+
+Instrumented methods:
+
+* `psycopg.connect`
+
+The instrumented `connect` method returns a wrapped connection/cursor which instruments the actual `Cursor.execute` calls.
+
+Collected trace data:
+
+* parametrized SQL query
 
 #### aiopg [automatic-instrumentation-db-aiopg]
 
-Library: `aiopg` (`>=1.0`)
+Library: `aiopg` (`>=1.0,<2`)
 
 Instrumented methods:
 
@@ -267,7 +280,7 @@ Collected trace data:
 
 #### asyncpg [automatic-instrumentation-db-asyncg]
 
-Library: `asyncpg` (`>=0.20`)
+Library: `asyncpg` (`>=0.20,<2`)
 
 Instrumented methods:
 
@@ -281,7 +294,7 @@ Collected trace data:
 
 #### PyODBC [automatic-instrumentation-db-pyodbc]
 
-Library: `pyodbc`, (`>=4.0`)
+Library: `pyodbc` (`>=4.0,<6`)
 
 Instrumented methods:
 
@@ -296,7 +309,7 @@ Collected trace data:
 
 #### MS-SQL [automatic-instrumentation-db-mssql]
 
-Library: `pymssql`, (`>=2.1.0`)
+Library: `pymssql` (`>=2.1.0,<3`)
 
 Instrumented methods:
 
@@ -311,7 +324,7 @@ Collected trace data:
 
 #### MongoDB [automatic-instrumentation-db-mongodb]
 
-Library: `pymongo`, `>=2.9,<3.8`
+Library: `pymongo` (`>=2.9,<5`)
 
 Instrumented methods:
 
@@ -355,7 +368,7 @@ Collected trace data:
 
 #### Redis [automatic-instrumentation-db-redis]
 
-Library: `redis` (`>=2.8`)
+Library: `redis` (`>=2.8,<8`)
 
 Instrumented methods:
 
@@ -369,7 +382,7 @@ Collected trace data:
 
 #### aioredis [automatic-instrumentation-db-aioredis]
 
-Library: `aioredis` (`<2.0`)
+Library: `aioredis` (`<=2.0.1`)
 
 Instrumented methods:
 
@@ -398,7 +411,7 @@ Collected trace data:
 
 #### Python Memcache [automatic-instrumentation-db-python-memcache]
 
-Library: `python-memcached` (`>=1.51`)
+Library: `python-memcached` (`>=1.51,<2`)
 
 Instrumented methods:
 
@@ -429,7 +442,7 @@ Collected trace data:
 
 #### pymemcache [automatic-instrumentation-db-pymemcache]
 
-Library: `pymemcache` (`>=3.0`)
+Library: `pymemcache` (`>=3.0,<4.1`)
 
 Instrumented methods:
 
@@ -463,13 +476,13 @@ Collected trace data:
 
 #### kafka-python [automatic-instrumentation-db-kafka-python]
 
-Library: `kafka-python` (`>=2.0`)
+Library: `kafka-python` (`>=2.0,<3`)
 
 Instrumented methods:
 
 * `kafka.KafkaProducer.send`,
 * `kafka.KafkaConsumer.poll`,
-* `kafka.KafkaConsumer.\__next__`
+* `kafka.KafkaConsumer.__next__`
 
 Collected trace data:
 
@@ -482,11 +495,11 @@ Collected trace data:
 
 #### Standard library [automatic-instrumentation-stdlib-urllib]
 
-Library: `urllib2` (Python 2) / `urllib.request` (Python 3)
+Library: `urllib.request` (Python 3)
 
 Instrumented methods:
 
-* `urllib2.AbstractHTTPHandler.do_open` / `urllib.request.AbstractHTTPHandler.do_open`
+* `urllib.request.AbstractHTTPHandler.do_open`
 
 Collected trace data:
 
@@ -496,7 +509,7 @@ Collected trace data:
 
 #### urllib3 [automatic-instrumentation-urllib3]
 
-Library: `urllib3`
+Library: `urllib3` (`<3`)
 
 Instrumented methods:
 
@@ -517,6 +530,8 @@ Collected trace data:
 
 #### requests [automatic-instrumentation-requests]
 
+Library: `requests` (`<3`)
+
 Instrumented methods:
 
 * `requests.sessions.Session.send`
@@ -529,6 +544,8 @@ Collected trace data:
 
 #### AIOHTTP Client [automatic-instrumentation-aiohttp-client]
 
+Library: `aiohttp` (`>=3,<4`)
+
 Instrumented methods:
 
 * `aiohttp.client.ClientSession._request`
@@ -540,6 +557,8 @@ Collected trace data:
 
 
 #### httpx [automatic-instrumentation-httpx]
+
+Library: `httpx` (`<1`)
 
 Instrumented methods:
 
@@ -556,7 +575,7 @@ Collected trace data:
 
 #### AWS Boto3 / Botocore [automatic-instrumentation-boto3]
 
-Library: `boto3` (`>=1.0`)
+Library: `boto3` (`>=1.0,<2`)
 
 Instrumented methods:
 
@@ -573,7 +592,7 @@ Additionally, some services collect more specific data
 
 #### AWS Aiobotocore [automatic-instrumentation-aiobotocore]
 
-Library: `aiobotocore` (`>=2.2.0`)
+Library: `aiobotocore` (`>=2.2.0,<3`)
 
 Instrumented methods:
 
