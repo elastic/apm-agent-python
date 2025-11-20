@@ -32,6 +32,15 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.24.1]]
+==== 6.24.1 - 2025-11-21
+
+[float]
+===== Bug fixes
+
+* Fix handling of psycopg ServerCursor and AsyncServerCursor instrumentation {pull}2489[#2489]
+* Fix contrib/opentelemetry set_status to match base signature {pull}2457[#2457]
+
 [[release-notes-6.24.0]]
 ==== 6.24.0 - 2025-08-12
 
