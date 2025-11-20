@@ -119,3 +119,10 @@ async def test_executemany(instrument, postgres_connection, elasticapm_client):
     assert span["action"] == "query"
     assert span["sync"] == False
     assert span["name"] == "INSERT INTO test"
+
+
+async def test_server_cursor_execute(instrument, postgres_connection, elasticapm_client):
+    cursor = postgres_connection.cursor(name="async_server_cursor")
+    assert isinstance(cursor, psycopg.AsyncServerCursor)
+    record = await cursor.execute(query="SELECT 1", params=None, binary=None)
+    assert record
