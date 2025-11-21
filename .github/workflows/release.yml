@@ -100,7 +100,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags')
         with:
           name: arn-file
-          path: ".arn-file.md"
+          path: "${{ github.workspace }}/.arn-file.md"
           if-no-files-found: error
 
   publish-docker:
