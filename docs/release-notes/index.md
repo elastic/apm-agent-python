@@ -26,6 +26,14 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 % ### Fixes [elastic-apm-python-agent-versionext-fixes]
 
+## 6.24.1 [elastic-apm-python-agent-6241-release-notes]
+**Release date:** November 21, 2025
+
+### Fixes [elastic-apm-python-agent-6241-fixes]
+
+* Fix handling of psycopg ServerCursor and AsyncServerCursor instrumentation [#2489](https://github.com/elastic/apm-agent-python/pull/2489)
+* Fix contrib/opentelemetry `set_status` to match base signature [#2457](https://github.com/elastic/apm-agent-python/pull/2457)
+
 ## 6.24.0 [elastic-apm-python-agent-6240-release-notes]
 **Release date:** August 12, 2025
 
