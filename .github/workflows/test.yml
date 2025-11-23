@@ -48,7 +48,7 @@ jobs:
     if: ${{ !inputs.skip-build }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/build-distribution
 
 
@@ -59,7 +59,7 @@ jobs:
       data: ${{ steps.split.outputs.data }}
       chunks: ${{ steps.split.outputs.chunks }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref || github.ref }}
       - id: generate
@@ -142,7 +142,7 @@ jobs:
       FRAMEWORK: ${{ matrix.framework }}
       ASYNCIO: ${{ matrix.asyncio }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-python@v6
@@ -199,7 +199,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref || github.ref }}
 
