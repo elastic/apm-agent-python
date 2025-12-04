@@ -53,6 +53,7 @@ FRAMEWORK:
   - redis-newest
   - psycopg-newest
   - psycopg2-newest
+  - psycopg_pool-newest
   - pymssql-newest
   - memcached-newest
   - pylibmc-1.4
