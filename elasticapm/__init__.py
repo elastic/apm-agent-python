@@ -67,19 +67,17 @@ if sys.version_info <= (3, 5):
 from elasticapm.contrib.asyncio.traces import async_capture_span  # noqa: F401 E402
 
 __all__ = (
-    "VERSION",
     "Client",
-    "get_client",
-    "setup_logging",
-    "capture_serverless",
-    "instrument",
-    "uninstrument",
-    "capture_span",
+    "VERSION",
     "async_capture_span",
+    "capture_serverless",
+    "capture_span",
+    "get_client",
     "get_span_id",
     "get_trace_id",
     "get_trace_parent_header",
     "get_transaction_id",
+    "instrument",
     "label",
     "set_context",
     "set_custom_context",
@@ -87,6 +85,8 @@ __all__ = (
     "set_transaction_outcome",
     "set_transaction_result",
     "set_user_context",
+    "setup_logging",
     "trace_parent_from_headers",
     "trace_parent_from_string",
+    "uninstrument",
 )
