@@ -28,6 +28,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import decimal
 import functools
 import random
 import re
@@ -989,10 +990,12 @@ class Tracer(object):
             execution_context.set_transaction(transaction)
         return transaction
 
-    def end_transaction(self, result=None, transaction_name=None, duration=None):
+    def end_transaction(
+        self, result: Optional[str] = None, transaction_name: Optional[str] = None, duration: Optional[timedelta] = None
+    ) -> Transaction:
         """
         End the current transaction and queue it for sending
-        :param result: result of the transaction, e.g. "OK" or 200
+        :param result: result of the transaction, e.g. "OK" or "HTTP 2xx"
         :param transaction_name: name of the transaction
         :param duration: override duration, mostly useful for testing
         :return:
@@ -1130,7 +1133,7 @@ class capture_span(object):
                 logger.debug("ended non-existing span %s of type %s", self.name, self.type)
 
 
-def label(**labels) -> None:
+def label(**labels: Union[str, bool, int, float, decimal.Decimal]) -> None:
     """
     Labels current transaction. Keys should be strings, values can be strings, booleans,
     or numerical values (int, float, Decimal)
@@ -1211,43 +1214,43 @@ def set_transaction_outcome(outcome=None, http_status_code=None, override=True) 
         transaction.outcome = outcome
 
 
-def get_transaction_id():
+def get_transaction_id() -> Optional[str]:
     """
     Returns the current transaction ID
     """
     transaction = execution_context.get_transaction()
     if not transaction:
-        return
+        return None
     return transaction.id
 
 
-def get_trace_parent_header():
+def get_trace_parent_header() -> Optional[str]:
     """
     Return the trace parent header for the current transaction.
     """
     transaction = execution_context.get_transaction()
     if not transaction or not transaction.trace_parent:
-        return
+        return None
     return transaction.trace_parent.to_string()
 
 
-def get_trace_id():
+def get_trace_id() -> Optional[str]:
     """
     Returns the current trace ID
     """
     transaction = execution_context.get_transaction()
     if not transaction:
-        return
+        return None
     return transaction.trace_parent.trace_id if transaction.trace_parent else None
 
 
-def get_span_id():
+def get_span_id() -> Optional[str]:
     """
     Returns the current span ID
     """
     span = execution_context.get_span()
     if not span:
-        return
+        return None
     return span.id
 
 
