@@ -177,7 +177,7 @@ async def test_traceparent_handling(app, base_url, http_client):
 
     assert transaction["trace_id"] == "0af7651916cd43dd8448eb211c80319c"
     assert transaction["parent_id"] == "b7ad6b7169203331"
-    assert "foo=bar,bar=baz,baz=bazzinga" == wrapped_from_string.call_args[0][0]["TraceState"]
+    assert "foo=bar,bar=baz,baz=bazzinga" == wrapped_from_string.call_args[0][0]["tracestate"]
 
 
 @pytest.mark.gen_test
