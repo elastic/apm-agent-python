@@ -71,7 +71,9 @@ class TornadoRequestExecuteInstrumentation(TornadoBaseInstrumentedModule, AsyncA
         client = instance.application.elasticapm_client
         should_ignore = client.should_ignore_url(request.path)
         if not should_ignore:
-            trace_parent = TraceParent.from_headers(request.headers)
+            # In tornado 6.5.3 the __in__ protocol for the headers is case-sensitive so we need to normalize them
+            normalized_headers = {k.lower(): v for k, v in request.headers.items()}
+            trace_parent = TraceParent.from_headers(normalized_headers)
             client.begin_transaction("request", trace_parent=trace_parent)
             elasticapm.set_context(
                 lambda: get_data_from_request(instance, request, client.config, constants.TRANSACTION), "request"
