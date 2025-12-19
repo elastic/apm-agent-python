@@ -203,7 +203,11 @@ class Transport(HTTPTransportBase):
 
     def _process_queue(self) -> None:
         if not self.client.server_version:
-            self.fetch_server_info()
+            # this is useful on aws lambda environments where this call incurs in unwanted latency
+            if self.client.config.skip_server_info:
+                logger.debug("Skipping to fetch server info")
+            else:
+                self.fetch_server_info()
         super()._process_queue()
 
     def fetch_server_info(self) -> None:

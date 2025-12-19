@@ -743,6 +743,7 @@ class Config(_ConfigBase):
         default=TRACE_CONTINUATION_STRATEGY.CONTINUE,
     )
     include_process_args = _BoolConfigValue("INCLUDE_PROCESS_ARGS", default=False)
+    skip_server_info = _BoolConfigValue("SKIP_SERVER_INFO", default=False)
 
     @property
     def is_recording(self):
