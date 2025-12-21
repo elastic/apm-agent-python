@@ -19,7 +19,7 @@ runs:
       run: ./dev-utils/make-packages.sh
       shell: bash
     - name: Upload Packages
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: packages
         path: |

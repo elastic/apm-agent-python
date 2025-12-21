@@ -57,7 +57,7 @@ jobs:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: packages
           path: dist
@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: build-distribution
           path: ./build
@@ -96,7 +96,7 @@ jobs:
           VERSION=${VERSION//./-}
 
           ELASTIC_LAYER_NAME="elastic-apm-python-${VERSION}" .ci/publish-aws.sh
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         if: startsWith(github.ref, 'refs/tags')
         with:
           name: arn-file
@@ -121,7 +121,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Log in to the Elastic Container registry
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
@@ -130,7 +130,7 @@ jobs:
           username: ${{ secrets.ELASTIC_DOCKER_USERNAME }}
           password: ${{ secrets.ELASTIC_DOCKER_PASSWORD }}
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: build-distribution
           path: ./build
@@ -175,7 +175,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: arn-file
       - name: Create GitHub Draft Release
