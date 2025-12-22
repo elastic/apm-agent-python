@@ -971,6 +971,10 @@ Whether each transaction should have the process arguments attached. Disabled by
 
 ### `skip_server_info` [config-skip-server-info]
 
+```{applies_to}
+apm_agent_python: preview 6.25.0
+```
+
 | Environment | Django/Flask | Default |
 | --- | --- | --- |
 | `ELASTIC_APM_SKIP_SERVER_INFO` | `SKIP_SERVER_INFO` | `False` |
