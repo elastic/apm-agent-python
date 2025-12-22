@@ -520,6 +520,23 @@ def test_fetch_server_info_flat_string(waiting_httpserver, caplog, elasticapm_cl
     assert_any_record_contains(caplog.records, "No version key found in server response")
 
 
+def test_skip_server_info(waiting_httpserver, elasticapm_client):
+    elasticapm_client.config.update(version="1", skip_server_info=True)
+    waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})
+    transport = Transport(
+        waiting_httpserver.url, client=elasticapm_client, headers=elasticapm_client._transport._headers
+    )
+    transport.start_thread()
+    try:
+        url = transport.send("x".encode("latin-1"))
+        assert url == "http://example.com/foo"
+    finally:
+        transport.close()
+
+    assert elasticapm_client.server_version is None
+    assert elasticapm_client.check_server_version(gte=(8, 7, 1))
+
+
 def test_close(waiting_httpserver, elasticapm_client):
     elasticapm_client.server_version = (8, 0, 0)  # avoid making server_info request
     waiting_httpserver.serve_content(code=202, content="", headers={"Location": "http://example.com/foo"})

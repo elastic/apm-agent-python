@@ -969,6 +969,23 @@ If set to `True`, the agent will intercept the default `sys.excepthook`, which a
 Whether each transaction should have the process arguments attached. Disabled by default to save disk space.
 
 
+### `skip_server_info` [config-skip-server-info]
+
+| Environment | Django/Flask | Default |
+| --- | --- | --- |
+| `ELASTIC_APM_SKIP_SERVER_INFO` | `SKIP_SERVER_INFO` | `False` |
+
+Whether we should skip the server info check to save some latency on constrained environments like AWS Lambda. Disabled by default.
+
+::::{warning}
+This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
+::::
+
+::::{warning}
+This requires sending data to an APM Server newer than 8.7.0 in order to work properly.
+::::
+
+
 ## Django-specific configuration [config-django-specific]
 
 
