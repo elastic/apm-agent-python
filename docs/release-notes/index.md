@@ -26,6 +26,18 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 % ### Fixes [elastic-apm-python-agent-versionext-fixes]
 
+## 6.25.0 [elastic-apm-python-agent-6250-release-notes]
+**Release date:** December 23, 2025
+
+### Features and enhancements [elastic-apm-python-agent-6250-features-enhancements]
+
+* Introduce `ELASTIC_APM_SKIP_SERVER_INFO` to reduce overhead on serverless with APM server 8.7.1+ [#2516](https://github.com/elastic/apm-agent-python/pull/2516)
+* List all exported symbols in elasticapm module  `__all__` [#2504](https://github.com/elastic/apm-agent-python/pull/2504)
+
+### Fixes [elastic-apm-python-agent-6250-fixes]
+
+* Handle Tornado 6.5.3 `HttpHeaders` `in` operator behavior change [#2512](https://github.com/elastic/apm-agent-python/pull/2512)
+
 ## 6.24.1 [elastic-apm-python-agent-6241-release-notes]
 **Release date:** November 21, 2025
 
