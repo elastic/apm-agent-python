@@ -32,13 +32,13 @@ jobs:
           LOCALSTACK_VOLUME_DIR: localstack_data
       - if: success() || failure()
         name: Upload JUnit Test Results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-${{ matrix.framework }}-${{ matrix.version }}
           path: "**/*-python-agent-junit.xml"
       - if: success() || failure()
         name: Upload Coverage Reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-reports-${{ matrix.framework }}-${{ matrix.version }}
           path: "**/.coverage*"
