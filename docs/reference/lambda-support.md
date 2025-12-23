@@ -9,7 +9,7 @@ applies_to:
     apm_agent_python: ga
 sub:
   apm-lambda-ext-v: ver-1-6-0
-  apm-python-v: ver-6-24-1
+  apm-python-v: ver-6-25-0
   apm-python-layer-v: 1
 ---
 
