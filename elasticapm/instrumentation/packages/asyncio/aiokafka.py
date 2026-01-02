@@ -53,13 +53,13 @@ class AIOKafkaInstrumentation(AsyncAbstractInstrumentedModule):
     """Instrument the aiokafka's consumer and producer
 
     Features:
-    - Like KafkaInstrumentation, it begins a new transaction on asynchronous
-      iteration over the consumer if no transaction is active.
-    - Unlike KafkaInstrumentation, when an active transaction exists, it also
-      records the last span that awaits a message before StopAsyncIteration
-      arises.
-    - Automatic trace context propagation is not supported for messages being
-      sent via send_batch().
+    - Like KafkaInstrumentation, if no transaction is active, it begins a new
+      transaction on asynchronous iteration over the consumer.
+    - Unlike KafkaInstrumentation, when an active transaction exists, it even
+      records StopAsyncIteration on asynchronous iteration over the consumer as
+      a span.
+    - It does not support automatic trace context propagation for messages
+      being sent via send_batch().
     """
 
     instrument_list = [
