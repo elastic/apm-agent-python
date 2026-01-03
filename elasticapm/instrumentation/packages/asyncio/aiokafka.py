@@ -29,9 +29,20 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import time
-from collections.abc import Awaitable, Callable, Container, Iterable, MutableSequence
 from enum import IntEnum
-from typing import TYPE_CHECKING, Dict, List, Optional, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Awaitable,
+    Callable,
+    Container,
+    Dict,
+    Iterable,
+    List,
+    MutableSequence,
+    Optional,
+    TypeVar,
+    cast,
+)
 
 from elasticapm import Client, get_client
 from elasticapm.conf.constants import OUTCOME, TRACEPARENT_BINARY_HEADER_NAME
