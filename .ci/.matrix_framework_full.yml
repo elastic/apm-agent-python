@@ -92,3 +92,4 @@ FRAMEWORK:
   #- grpc-1.24 # This appears to have problems with python>3.6?
   - azurefunctions-newest
   - azure-newest
+  - aiokafka-newest
