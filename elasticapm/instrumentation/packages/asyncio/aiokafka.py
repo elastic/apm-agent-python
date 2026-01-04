@@ -119,8 +119,7 @@ class AIOKafkaInstrumentation(AsyncAbstractInstrumentedModule):
             if transaction:
                 client.end_transaction(result=OUTCOME.SUCCESS)
 
-            # May raise StopAsyncIteration
-            result = await wrapped(*args, **kwargs)
+            result = await wrapped(*args, **kwargs)  # May raise StopAsyncIteration
             message = cast("ConsumerRecord", result)
 
             if client.should_ignore_topic(message.topic):
@@ -183,26 +182,26 @@ class AIOKafkaInstrumentation(AsyncAbstractInstrumentedModule):
 
             result = await wrapped(*args, **kwargs)
 
-            if not span or isinstance(span, DroppedSpan):
-                return result
-
-            trace_topics = [
-                topic for topic in _extract_topics_from_get_result(result) if not client.should_ignore_topic(topic)
-            ]
-
-            if not trace_topics:
-                span.cancel()
-                return result
-
-            span.name += f" from {', '.join(trace_topics)}"
-            cls._enrich_span_context(span, *trace_topics, consumer=instance)
-
-            for message in _extract_messages_from_get_result(result, include_topics=trace_topics):
-                trace_parent = _extract_trace_parent_from_message_headers(message.headers)
-                if trace_parent:
-                    span.add_link(trace_parent)
-
+        if not span or isinstance(span, DroppedSpan):
             return result
+
+        trace_topics = [
+            topic for topic in _extract_topics_from_get_result(result) if not client.should_ignore_topic(topic)
+        ]
+
+        if not trace_topics:
+            span.cancel()
+            return result
+
+        span.name += f" from {', '.join(trace_topics)}"
+        cls._enrich_span_context(span, *trace_topics, consumer=instance)
+
+        for message in _extract_messages_from_get_result(result, include_topics=trace_topics):
+            trace_parent = _extract_trace_parent_from_message_headers(message.headers)
+            if trace_parent:
+                span.add_link(trace_parent)
+
+        return result
 
     @classmethod
     async def _trace_send(
@@ -237,10 +236,10 @@ class AIOKafkaInstrumentation(AsyncAbstractInstrumentedModule):
 
             result = await wrapped(*mutable_args, **kwargs)
 
-            if span and not isinstance(span, DroppedSpan):
-                cls._enrich_span_context(span, topic, producer=instance)
+        if span and not isinstance(span, DroppedSpan):
+            cls._enrich_span_context(span, topic, producer=instance)
 
-            return result
+        return result
 
     @classmethod
     def _enrich_span_context(
