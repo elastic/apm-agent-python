@@ -40,10 +40,8 @@ from elasticapm.conf.constants import OUTCOME, SPAN, TRACEPARENT_BINARY_HEADER_N
 from elasticapm.instrumentation.packages.asyncio.aiokafka import _inject_trace_parent_into_send_arguments
 from elasticapm.utils.disttracing import TraceParent
 
-kafka = pytest.importorskip("aiokafka")
-
-from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
-from aiokafka.admin import AIOKafkaAdminClient, NewTopic
+aiokafka = pytest.importorskip("aiokafka")
+aiokafka_admin = pytest.importorskip("aiokafka.admin")
 
 pytestmark = [pytest.mark.aiokafka]
 
@@ -55,10 +53,12 @@ if not KAFKA_HOST:
 @pytest_asyncio.fixture(scope="function")
 async def topics():
     topics = ["test", "foo", "bar"]
-    admin_client = AIOKafkaAdminClient(bootstrap_servers=[f"{KAFKA_HOST}:9092"])
+    admin_client = aiokafka_admin.AIOKafkaAdminClient(bootstrap_servers=[f"{KAFKA_HOST}:9092"])
 
     await admin_client.start()
-    await admin_client.create_topics([NewTopic(name, num_partitions=1, replication_factor=1) for name in topics])
+    await admin_client.create_topics(
+        [aiokafka_admin.NewTopic(name, num_partitions=1, replication_factor=1) for name in topics]
+    )
     try:
         yield topics
     finally:
@@ -67,7 +67,7 @@ async def topics():
 
 @pytest_asyncio.fixture()
 async def producer():
-    producer = AIOKafkaProducer(bootstrap_servers=f"{KAFKA_HOST}:9092")
+    producer = aiokafka.AIOKafkaProducer(bootstrap_servers=f"{KAFKA_HOST}:9092")
     await producer.start()
     await producer.client.bootstrap()
     try:
@@ -78,7 +78,7 @@ async def producer():
 
 @pytest_asyncio.fixture()
 async def consumer(topics):
-    consumer = AIOKafkaConsumer(bootstrap_servers=f"{KAFKA_HOST}:9092")
+    consumer = aiokafka.AIOKafkaConsumer(bootstrap_servers=f"{KAFKA_HOST}:9092")
     consumer.subscribe(topics=topics)
     await consumer.start()
 
@@ -371,7 +371,7 @@ def test_aiokafka_inject_trace_parent_into_send_arguments():
     headers_list_but_malformed = [tuple()]
     headers_list_with_other_traceparent = [(TRACEPARENT_BINARY_HEADER_NAME, ...)]
     headers_none = None
-    batch = AIOKafkaProducer.create_batch(self=MagicMock())
+    batch = aiokafka.AIOKafkaProducer.create_batch(self=MagicMock())
 
     def func(*args, **kwargs):
         mutable_args = list(args)
