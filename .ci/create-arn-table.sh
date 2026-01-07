@@ -8,7 +8,7 @@ set -o pipefail
 
 AWS_FOLDER=${AWS_FOLDER?:No aws folder provided}
 # Get the repository root directory (where .git is located)
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(realpath $(dirname "${BASH_SOURCE[0]}")/..)"
 ARN_FILE="${REPO_ROOT}/.arn-file.md"
 
 {
