@@ -27,7 +27,6 @@
 #  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import codecs
 import json
 import os
 
@@ -40,7 +39,7 @@ def pytest_generate_tests(metafunc):
         json_cases = os.path.join(
             os.path.dirname(__file__), "..", "..", "upstream", "json-specs", "wildcard_matcher_tests.json"
         )
-        with codecs.open(json_cases, encoding="utf8") as test_cases_file:
+        with open(json_cases, encoding="utf8") as test_cases_file:
             test_cases = json.load(test_cases_file)
             for test_case, pattern_sets in test_cases.items():
                 for pattern, texts in pattern_sets.items():

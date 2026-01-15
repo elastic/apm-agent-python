@@ -110,8 +110,9 @@ def process_request_wrapper(wrapped, instance, args, kwargs):
             elasticapm.set_transaction_name(
                 build_name_with_http_method_prefix(get_name_from_middleware(wrapped, instance), request)
             )
-    finally:
-        return response
+    except Exception:
+        pass
+    return response
 
 
 def process_response_wrapper(wrapped, instance, args, kwargs):
@@ -125,8 +126,9 @@ def process_response_wrapper(wrapped, instance, args, kwargs):
             elasticapm.set_transaction_name(
                 build_name_with_http_method_prefix(get_name_from_middleware(wrapped, instance), request)
             )
-    finally:
-        return response
+    except Exception:
+        pass
+    return response
 
 
 class TracingMiddleware(MiddlewareMixin, ElasticAPMClientMiddlewareMixin):
