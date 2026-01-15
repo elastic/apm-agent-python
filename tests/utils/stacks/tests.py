@@ -32,8 +32,8 @@
 
 from __future__ import absolute_import
 
+import importlib
 import os
-import pkgutil
 
 import pytest
 from mock import Mock
@@ -240,7 +240,8 @@ def test_get_lines_from_file(lineno, context, expected):
 def test_get_lines_from_loader(lineno, context, expected):
     stacks.get_lines_from_file.cache_clear()
     module = "tests.utils.stacks.linenos"
-    loader = pkgutil.get_loader(module)
+    spec = importlib.util.find_spec(module)
+    loader = spec.loader if spec is not None else None
     fname = os.path.join(os.path.dirname(__file__), "linenos.py")
     result = stacks.get_lines_from_file(fname, lineno, context, loader=loader, module_name=module)
     assert result == expected
