@@ -80,6 +80,12 @@ exclude:
     FRAMEWORK: celery-5-django-3
   - VERSION: python-3.13 # https://github.com/celery/billiard/issues/377
     FRAMEWORK: celery-5-django-4
+  - VERSION: python-3.14 # https://github.com/celery/billiard/issues/377
+    FRAMEWORK: celery-5-flask-2
+  - VERSION: python-3.14 # https://github.com/celery/billiard/issues/377
+    FRAMEWORK: celery-5-django-3
+  - VERSION: python-3.14 # https://github.com/celery/billiard/issues/377
+    FRAMEWORK: celery-5-django-4
   - VERSION: python-3.10
     FRAMEWORK: graphene-2
   - VERSION: python-3.10
@@ -146,7 +152,31 @@ exclude:
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.13
     FRAMEWORK: cassandra-3.4
-  - VERSION: python-3.13
+  - VERSION: python-3.14
+    FRAMEWORK: django-1.11
+  - VERSION: python-3.14
+    FRAMEWORK: django-2.0
+  - VERSION: python-3.14
+    FRAMEWORK: django-2.1
+  - VERSION: python-3.14
+    FRAMEWORK: django-2.2
+  - VERSION: python-3.14
+    FRAMEWORK: django-3.0
+  - VERSION: python-3.14
+    FRAMEWORK: django-3.1
+  - VERSION: python-3.14
+    FRAMEWORK: django-3.2
+  - VERSION: python-3.14
+    FRAMEWORK: django-4.0
+  - VERSION: python-3.14
+    FRAMEWORK: graphene-2
+  - VERSION: python-3.14
+    FRAMEWORK: aiohttp-3.0
+  - VERSION: python-3.14
+    FRAMEWORK: aiohttp-4.0
+  - VERSION: python-3.14
+    FRAMEWORK: cassandra-3.4
+  - VERSION: python-3.14
     FRAMEWORK: pymongo-3.5
   # pymongo
   - VERSION: python-3.10
@@ -157,6 +187,8 @@ exclude:
     FRAMEWORK: pymongo-3.1
   - VERSION: python-3.13
     FRAMEWORK: pymongo-3.1
+  - VERSION: python-3.14
+    FRAMEWORK: pymongo-3.1
   - VERSION: python-3.10
     FRAMEWORK: pymongo-3.2
   - VERSION: python-3.11
@@ -165,6 +197,8 @@ exclude:
     FRAMEWORK: pymongo-3.2
   - VERSION: python-3.13
     FRAMEWORK: pymongo-3.2
+  - VERSION: python-3.14
+    FRAMEWORK: pymongo-3.2
   - VERSION: python-3.10
     FRAMEWORK: pymongo-3.3
   - VERSION: python-3.11
@@ -172,6 +206,8 @@ exclude:
   - VERSION: python-3.12
     FRAMEWORK: pymongo-3.3
   - VERSION: python-3.13
+    FRAMEWORK: pymongo-3.3
+  - VERSION: python-3.14
     FRAMEWORK: pymongo-3.3
   - VERSION: python-3.8
     FRAMEWORK: pymongo-3.4
@@ -185,6 +221,12 @@ exclude:
     FRAMEWORK: pymongo-3.4
   - VERSION: python-3.13
     FRAMEWORK: pymongo-3.4
+  - VERSION: python-3.13
+    FRAMEWORK: pymongo-3.5
+  - VERSION: python-3.14
+    FRAMEWORK: pymongo-3.4
+  - VERSION: python-3.14
+    FRAMEWORK: pymongo-3.5
   - VERSION: pypy-3
     FRAMEWORK: pymongo-3.0
   # pymssql
@@ -211,6 +253,10 @@ exclude:
   - VERSION: python-3.13
     FRAMEWORK: boto3-1.5
   - VERSION: python-3.13
+    FRAMEWORK: boto3-1.6
+  - VERSION: python-3.14
+    FRAMEWORK: boto3-1.5
+  - VERSION: python-3.14
     FRAMEWORK: boto3-1.6
   # aiohttp client, only supported in Python 3.7+
   - VERSION: pypy-3
@@ -259,6 +305,8 @@ exclude:
     FRAMEWORK: asyncpg-0.28
   - VERSION: python-3.13
     FRAMEWORK: asyncpg-0.28
+  - VERSION: python-3.14
+    FRAMEWORK: asyncpg-0.28
   # sanic
   - VERSION: pypy-3
     FRAMEWORK: sanic-newest
@@ -271,6 +319,8 @@ exclude:
   - VERSION: python-3.8
     FRAMEWORK: sanic-newest
   - VERSION: python-3.13
+    FRAMEWORK: sanic-20.12
+  - VERSION: python-3.14
     FRAMEWORK: sanic-20.12
   # aioredis
   - VERSION: pypy-3
@@ -315,12 +365,22 @@ exclude:
     FRAMEWORK: twisted-16
   - VERSION: python-3.13
     FRAMEWORK: twisted-15
+  - VERSION: python-3.14
+    FRAMEWORK: twisted-18
+  - VERSION: python-3.14
+    FRAMEWORK: twisted-17
+  - VERSION: python-3.14
+    FRAMEWORK: twisted-16
+  - VERSION: python-3.14
+    FRAMEWORK: twisted-15
   # pylibmc
   - VERSION: python-3.11
     FRAMEWORK: pylibmc-1.4
   - VERSION: python-3.12
     FRAMEWORK: pylibmc-1.4
   - VERSION: python-3.13
+    FRAMEWORK: pylibmc-1.4
+  - VERSION: python-3.14
     FRAMEWORK: pylibmc-1.4
   # grpc
   - VERSION: python-3.6
@@ -339,6 +399,8 @@ exclude:
     FRAMEWORK: grpc-1.24
   - VERSION: python-3.13
     FRAMEWORK: grpc-1.24
+  - VERSION: python-3.14
+    FRAMEWORK: grpc-1.24
   - VERSION: python-3.7
     FRAMEWORK: flask-1.0
   - VERSION: python-3.7
@@ -350,10 +412,18 @@ exclude:
     FRAMEWORK: sanic-20.12  # no wheels available yet
   - VERSION: python-3.13
     FRAMEWORK: cassandra-newest  # c extension issue
+  - VERSION: python-3.14
+    FRAMEWORK: cassandra-newest  # c extension issue
   # httpx
   - VERSION: python-3.13
     FRAMEWORK: httpx-0.13
   - VERSION: python-3.13
     FRAMEWORK: httpx-0.14
   - VERSION: python-3.13
+    FRAMEWORK: httpx-0.21
+  - VERSION: python-3.14
+    FRAMEWORK: httpx-0.13
+  - VERSION: python-3.14
+    FRAMEWORK: httpx-0.14
+  - VERSION: python-3.14
     FRAMEWORK: httpx-0.21
