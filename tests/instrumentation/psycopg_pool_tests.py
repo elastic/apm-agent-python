@@ -32,21 +32,39 @@ import os
 
 import pytest
 
-pytestmark = [pytest.mark.psycopg_pool, pytest.mark.integrationtest]
+from elasticapm.conf.constants import SPAN
 
-pytest.importorskip("psycopg")
+psycopg = pytest.importorskip("psycopg")
 pool_mod = pytest.importorskip("psycopg_pool")
 
+pytestmark = [pytest.mark.psycopg_pool, pytest.mark.integrationtest]
 
+has_postgres_configured = "POSTGRES_DB" in os.environ
+
+
+def connect_kwargs():
+    return {
+        "dbname": os.environ.get("POSTGRES_DB", "elasticapm_test"),
+        "user": os.environ.get("POSTGRES_USER", "postgres"),
+        "password": os.environ.get("POSTGRES_PASSWORD", "postgres"),
+        "host": os.environ.get("POSTGRES_HOST", None),
+        "port": os.environ.get("POSTGRES_PORT", None),
+    }
+
+
+def make_conninfo():
+    kw = connect_kwargs()
+    host = kw["host"] or "localhost"
+    port = kw["port"] or "5432"
+    return f"postgresql://{kw['user']}:{kw['password']}@{host}:{port}/{kw['dbname']}"
+
+
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgreSQL not configured")
 def test_pool_generates_spans(instrument, elasticapm_client):
     with pool_mod.ConnectionPool(
-        os.environ.get(
-            "PSYCOPG_TEST_DSN",
-            "postgresql://postgres:postgres@127.0.0.1:5432/postgres",
-        ),
+        make_conninfo(),
         min_size=1,
         max_size=2,
-        open=True,
     ) as pool:
         pool.wait()
 
@@ -59,5 +77,8 @@ def test_pool_generates_spans(instrument, elasticapm_client):
         finally:
             elasticapm_client.end_transaction("200")
 
-    spans = elasticapm_client.events["span"]
+    spans = elasticapm_client.events[SPAN]
+    # Verify that connect span and query span are generated
+    assert len(spans) >= 2
+    assert any(span.get("action") == "connect" for span in spans)
     assert any(span.get("context", {}).get("db", {}).get("type") == "sql" for span in spans)
