@@ -7,7 +7,9 @@ set -o pipefail
 #  AWS_FOLDER - that's the location of the publish-layer-version output for each region
 
 AWS_FOLDER=${AWS_FOLDER?:No aws folder provided}
-ARN_FILE=".arn-file.md"
+# Get the repository root directory (where .git is located)
+REPO_ROOT="$(realpath $(dirname "${BASH_SOURCE[0]}")/..)"
+ARN_FILE="${REPO_ROOT}/.arn-file.md"
 
 {
 	echo "<details>"
@@ -28,3 +30,5 @@ done
 	echo '</details>'
 	echo ''
 } >> "${ARN_FILE}"
+
+echo "INFO: Created ARN table at ${ARN_FILE}"
