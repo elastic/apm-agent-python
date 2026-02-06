@@ -1,0 +1,2 @@
+psycopg[binary,pool]
+-r reqs-base.txt
