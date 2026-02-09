@@ -353,32 +353,24 @@ exclude:
     FRAMEWORK: twisted-17
   - VERSION: python-3.11
     FRAMEWORK: twisted-16
-  - VERSION: python-3.11
-    FRAMEWORK: twisted-15
   - VERSION: python-3.12
     FRAMEWORK: twisted-18
   - VERSION: python-3.12
     FRAMEWORK: twisted-17
   - VERSION: python-3.12
     FRAMEWORK: twisted-16
-  - VERSION: python-3.12
-    FRAMEWORK: twisted-15
   - VERSION: python-3.13
     FRAMEWORK: twisted-18
   - VERSION: python-3.13
     FRAMEWORK: twisted-17
   - VERSION: python-3.13
     FRAMEWORK: twisted-16
-  - VERSION: python-3.13
-    FRAMEWORK: twisted-15
   - VERSION: python-3.14
     FRAMEWORK: twisted-18
   - VERSION: python-3.14
     FRAMEWORK: twisted-17
   - VERSION: python-3.14
     FRAMEWORK: twisted-16
-  - VERSION: python-3.14
-    FRAMEWORK: twisted-15
   # pylibmc
   - VERSION: python-3.11
     FRAMEWORK: pylibmc-1.4

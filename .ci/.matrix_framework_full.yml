@@ -36,7 +36,6 @@ FRAMEWORK:
   - twisted-18
   - twisted-17
   - twisted-16
-  - twisted-15
   - requests-newest
   - boto3-1.5
   - boto3-1.6
