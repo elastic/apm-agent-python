@@ -59,6 +59,9 @@ exclude:
     FRAMEWORK: flask-3.0
   - VERSION: python-3.14
     FRAMEWORK: flask-1.0
+  # Python 3.9
+  - VERSION: python-3.9
+    FRAMEWORK: cassandra-3.24
   # Python 3.10 removed a bunch of classes from collections, now in collections.abc
   - VERSION: python-3.10
     FRAMEWORK: django-1.11
