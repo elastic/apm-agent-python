@@ -95,7 +95,7 @@ exclude:
   - VERSION: python-3.10
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.10
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.10
     FRAMEWORK: pymongo-3.5
   - VERSION: python-3.11
@@ -111,7 +111,7 @@ exclude:
   - VERSION: python-3.11
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.11
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.11
     FRAMEWORK: pymongo-3.5
   - VERSION: python-3.12
@@ -127,7 +127,7 @@ exclude:
   - VERSION: python-3.12
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.12
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.12
     FRAMEWORK: pymongo-3.5
   - VERSION: python-3.13
@@ -153,7 +153,7 @@ exclude:
   - VERSION: python-3.13
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.13
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.14
     FRAMEWORK: django-1.11
   - VERSION: python-3.14
@@ -181,7 +181,7 @@ exclude:
   - VERSION: python-3.14
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.14
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.14
     FRAMEWORK: pymongo-3.5
   # pymongo
@@ -408,8 +408,6 @@ exclude:
   # TODO py3.12
   - VERSION: python-3.12
     FRAMEWORK: sanic-20.12  # no wheels available yet
-  - VERSION: python-3.13
-    FRAMEWORK: cassandra-newest  # c extension issue
   - VERSION: python-3.14
     FRAMEWORK: cassandra-newest  # c extension issue
   # httpx
