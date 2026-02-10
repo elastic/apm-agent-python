@@ -397,7 +397,7 @@ Collected trace data:
 
 #### Cassandra [automatic-instrumentation-db-cassandra]
 
-Library: `cassandra-driver` (`>=3.4,<4.0`)
+Library: `cassandra-driver` (`>=3.24,<4.0`)
 
 Instrumented methods:
 
