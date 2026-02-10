@@ -59,6 +59,9 @@ exclude:
     FRAMEWORK: flask-3.0
   - VERSION: python-3.14
     FRAMEWORK: flask-1.0
+  # Python 3.9
+  - VERSION: python-3.9
+    FRAMEWORK: cassandra-3.24
   # Python 3.10 removed a bunch of classes from collections, now in collections.abc
   - VERSION: python-3.10
     FRAMEWORK: django-1.11
@@ -95,7 +98,7 @@ exclude:
   - VERSION: python-3.10
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.10
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.10
     FRAMEWORK: pymongo-3.5
   - VERSION: python-3.11
@@ -111,7 +114,7 @@ exclude:
   - VERSION: python-3.11
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.11
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.11
     FRAMEWORK: pymongo-3.5
   - VERSION: python-3.12
@@ -127,7 +130,7 @@ exclude:
   - VERSION: python-3.12
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.12
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.12
     FRAMEWORK: pymongo-3.5
   - VERSION: python-3.13
@@ -153,7 +156,7 @@ exclude:
   - VERSION: python-3.13
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.13
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.14
     FRAMEWORK: django-1.11
   - VERSION: python-3.14
@@ -181,7 +184,7 @@ exclude:
   - VERSION: python-3.14
     FRAMEWORK: aiohttp-4.0
   - VERSION: python-3.14
-    FRAMEWORK: cassandra-3.4
+    FRAMEWORK: cassandra-3.24
   - VERSION: python-3.14
     FRAMEWORK: pymongo-3.5
   # pymongo
@@ -353,32 +356,24 @@ exclude:
     FRAMEWORK: twisted-17
   - VERSION: python-3.11
     FRAMEWORK: twisted-16
-  - VERSION: python-3.11
-    FRAMEWORK: twisted-15
   - VERSION: python-3.12
     FRAMEWORK: twisted-18
   - VERSION: python-3.12
     FRAMEWORK: twisted-17
   - VERSION: python-3.12
     FRAMEWORK: twisted-16
-  - VERSION: python-3.12
-    FRAMEWORK: twisted-15
   - VERSION: python-3.13
     FRAMEWORK: twisted-18
   - VERSION: python-3.13
     FRAMEWORK: twisted-17
   - VERSION: python-3.13
     FRAMEWORK: twisted-16
-  - VERSION: python-3.13
-    FRAMEWORK: twisted-15
   - VERSION: python-3.14
     FRAMEWORK: twisted-18
   - VERSION: python-3.14
     FRAMEWORK: twisted-17
   - VERSION: python-3.14
     FRAMEWORK: twisted-16
-  - VERSION: python-3.14
-    FRAMEWORK: twisted-15
   # pylibmc
   - VERSION: python-3.11
     FRAMEWORK: pylibmc-1.4
@@ -416,8 +411,6 @@ exclude:
   # TODO py3.12
   - VERSION: python-3.12
     FRAMEWORK: sanic-20.12  # no wheels available yet
-  - VERSION: python-3.13
-    FRAMEWORK: cassandra-newest  # c extension issue
   - VERSION: python-3.14
     FRAMEWORK: cassandra-newest  # c extension issue
   # httpx
