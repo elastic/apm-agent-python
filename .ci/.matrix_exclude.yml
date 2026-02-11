@@ -426,3 +426,6 @@ exclude:
     FRAMEWORK: httpx-0.14
   - VERSION: python-3.14
     FRAMEWORK: httpx-0.21
+  # aiokafka
+  - VERSION: python-3.6
+    FRAMEWORK: aiokafka-newest
