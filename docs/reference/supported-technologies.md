@@ -490,6 +490,24 @@ Collected trace data:
 * topic (if applicable)
 
 
+#### aiokafka [automatic-instrumentation-db-aiokafka]
+
+Library: `aiokafka` (`>=0.12.0,<1`)
+
+Instrumented methods:
+
+* `aiokafka.AIOKafkaConsumer.getone`,
+* `aiokafka.AIOKafkaConsumer.getmany`,
+* `aiokafka.AIOKafkaProducer.send`,
+* `aiokafka.AIOKafkaProducer.send_batch`,
+* `aiokafka.AIOKafkaConsumer.__anext__`
+
+Collected trace data:
+
+* Destination (address and port)
+* topic (if applicable)
+
+
 ### External HTTP requests [automatic-instrumentation-http]
 
 
