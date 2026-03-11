@@ -15,7 +15,7 @@ applies_to:
 The Elastic APM Python agent sends performance metrics and error logs to the APM Server. It has built-in support for Django and Flask performance metrics and error logging, as well as generic support of other WSGI frameworks for error logging.
 
 :::::{note}
-Elastic supports OpenTelemetry, which allows logs, metrics, and trace signal collection for many of the [supported technologies](/reference/supported-technologies.md) below. Consider using the [EDOT Python SDK](https://www.elastic.co/docs/reference/opentelemetry/edot-sdks/python) for observability data so you continue to get the full power of Elastic's platform.
+Elastic supports OpenTelemetry, which allows logs, metrics, and trace signal collection for many of the [supported technologies](/reference/supported-technologies.md) below. Consider using the [EDOT Python SDK](elastic-otel-python://reference/edot-python/index.md) for observability data so you continue to get the full power of Elastic's platform.
 :::::
 
 ## How does the Agent work? [how-it-works]
