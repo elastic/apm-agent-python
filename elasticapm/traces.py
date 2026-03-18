@@ -682,7 +682,7 @@ class Span(BaseSpan):
 
     @property
     def min_duration(self) -> timedelta:
-        if self.leaf and self.transaction.config_exit_span_min_duration > timedelta(seconds=0):
+        if self.leaf and self.transaction.config_exit_span_min_duration:
             return self.transaction.config_exit_span_min_duration
         return self.transaction.config_span_min_duration
 
