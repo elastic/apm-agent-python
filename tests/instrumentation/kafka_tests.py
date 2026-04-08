@@ -166,6 +166,7 @@ def test_kafka_consumer_ignore_topic(instrument, elasticapm_client, producer, co
         producer.send(topic="foo", key=b"foo", value=b"bar")
         producer.send("bar", key=b"foo", value=b"bar")
         producer.send("test", key=b"foo", value=b"bar")
+        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -186,6 +187,7 @@ def test_kafka_consumer_ignore_topic_ongoing_transaction(instrument, elasticapm_
         producer.send(topic="foo", key=b"foo", value=b"bar")
         producer.send("bar", key=b"foo", value=b"bar")
         producer.send("test", key=b"foo", value=b"bar")
+        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
