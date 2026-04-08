@@ -572,7 +572,7 @@ def test_post_raw_data(django_elasticapm_client):
 def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
     request = rf.post("/test", data="{}", content_type="application/json")
 
-    def read():
+    def read(*args, **kwargs):
         raise IOError("foobar")
 
     request.read = read
