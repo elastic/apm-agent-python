@@ -9,6 +9,7 @@ cross_links:
   - ecs
   - ecs-logging
   - ecs-logging-python
+  - elastic-otel-python
   - elasticsearch
   - logstash-docs-md
 toc:
