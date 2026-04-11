@@ -32,20 +32,20 @@ import pytest
 
 grpc = pytest.importorskip("grpc")
 
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, call, patch
 
 pytestmark = pytest.mark.grpc
 
 from elasticapm.instrumentation.packages.grpc import (
+    GRPCAsyncServerInstrumentation,
     GRPCClientInstrumentation,
     GRPCServerInstrumentation,
-    GRPCAsyncServerInstrumentation,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_client_instrumentation():
     return GRPCClientInstrumentation()
@@ -72,8 +72,9 @@ class TestGRPCClientInstrumentation:
         wrapped = MagicMock(return_value=fake_channel)
         intercepted_channel = MagicMock()
 
-        with patch("grpc.intercept_channel", return_value=intercepted_channel) as mock_intercept, \
-             patch("elasticapm.contrib.grpc.client_interceptor._ClientInterceptor") as MockInterceptor:
+        with patch("grpc.intercept_channel", return_value=intercepted_channel) as mock_intercept, patch(
+            "elasticapm.contrib.grpc.client_interceptor._ClientInterceptor"
+        ) as MockInterceptor:
             result = instrumentation.call(
                 module="grpc",
                 method="insecure_channel",
@@ -94,8 +95,9 @@ class TestGRPCClientInstrumentation:
         fake_channel = MagicMock()
         wrapped = MagicMock(return_value=fake_channel)
 
-        with patch("grpc.intercept_channel") as mock_intercept, \
-             patch("elasticapm.contrib.grpc.client_interceptor._ClientInterceptor") as MockInterceptor:
+        with patch("grpc.intercept_channel") as mock_intercept, patch(
+            "elasticapm.contrib.grpc.client_interceptor._ClientInterceptor"
+        ) as MockInterceptor:
             instrumentation.call(
                 module="grpc",
                 method="insecure_channel",
@@ -112,8 +114,9 @@ class TestGRPCClientInstrumentation:
         instrumentation = _make_client_instrumentation()
         wrapped = MagicMock(return_value=MagicMock())
 
-        with patch("grpc.intercept_channel"), \
-             patch("elasticapm.contrib.grpc.client_interceptor._ClientInterceptor") as MockInterceptor:
+        with patch("grpc.intercept_channel"), patch(
+            "elasticapm.contrib.grpc.client_interceptor._ClientInterceptor"
+        ) as MockInterceptor:
             instrumentation.call(
                 module="grpc",
                 method="secure_channel",
@@ -130,8 +133,9 @@ class TestGRPCClientInstrumentation:
         instrumentation = _make_client_instrumentation()
         wrapped = MagicMock(return_value=MagicMock())
 
-        with patch("grpc.intercept_channel"), \
-             patch("elasticapm.contrib.grpc.client_interceptor._ClientInterceptor") as MockInterceptor:
+        with patch("grpc.intercept_channel"), patch(
+            "elasticapm.contrib.grpc.client_interceptor._ClientInterceptor"
+        ) as MockInterceptor:
             instrumentation.call(
                 module="grpc",
                 method="insecure_channel",
@@ -148,8 +152,9 @@ class TestGRPCClientInstrumentation:
         instrumentation = _make_client_instrumentation()
         wrapped = MagicMock(return_value=MagicMock())
 
-        with patch("grpc.intercept_channel"), \
-             patch("elasticapm.contrib.grpc.client_interceptor._ClientInterceptor") as MockInterceptor:
+        with patch("grpc.intercept_channel"), patch(
+            "elasticapm.contrib.grpc.client_interceptor._ClientInterceptor"
+        ) as MockInterceptor:
             instrumentation.call(
                 module="grpc",
                 method="insecure_channel",
@@ -167,8 +172,9 @@ class TestGRPCClientInstrumentation:
         sentinel = MagicMock()
         wrapped = MagicMock(return_value=MagicMock())
 
-        with patch("grpc.intercept_channel", return_value=sentinel), \
-             patch("elasticapm.contrib.grpc.client_interceptor._ClientInterceptor"):
+        with patch("grpc.intercept_channel", return_value=sentinel), patch(
+            "elasticapm.contrib.grpc.client_interceptor._ClientInterceptor"
+        ):
             result = instrumentation.call(
                 module="grpc",
                 method="insecure_channel",
