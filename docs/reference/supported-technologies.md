@@ -11,6 +11,10 @@ applies_to:
 
 # Supported technologies [supported-technologies]
 
+The Elastic APM Python Agent supports the technologies listed below.
+
+Elastic supports OpenTelemetry, which allows logs, metrics, and trace signal collection for many of these technologies. Consider using the [EDOT Python SDK](elastic-otel-python://reference/edot-python/index.md) for observability data so you continue to get the full power of Elastic's platform.
+
 $$$framework-support$$$
 The Elastic APM Python Agent comes with support for the following frameworks:
 

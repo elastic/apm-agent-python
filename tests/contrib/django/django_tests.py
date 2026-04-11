@@ -172,7 +172,7 @@ def test_view_exception_elasticapm_debug(django_elasticapm_client, client):
 @pytest.mark.django_db
 def test_user_info(django_elasticapm_client, client):
     user = User(username="admin", email="admin@example.com")
-    user.set_password("admin")
+    user.set_password("longer_password_for_admin")
     user.save()
 
     with pytest.raises(Exception):
@@ -187,7 +187,7 @@ def test_user_info(django_elasticapm_client, client):
     assert user_info["username"] == ""
     assert "email" not in user_info
 
-    assert client.login(username="admin", password="admin")
+    assert client.login(username="admin", password="longer_password_for_admin")
 
     with pytest.raises(Exception):
         client.get(reverse("elasticapm-raise-exc"))
@@ -207,10 +207,10 @@ def test_user_info(django_elasticapm_client, client):
 @pytest.mark.django_db
 def test_user_info_raises_database_error(django_elasticapm_client, client):
     user = User(username="admin", email="admin@example.com")
-    user.set_password("admin")
+    user.set_password("longer_password_for_admin")
     user.save()
 
-    assert client.login(username="admin", password="admin")
+    assert client.login(username="admin", password="longer_password_for_admin")
 
     with mock.patch("django.contrib.auth.models.User.is_authenticated") as is_authenticated:
         is_authenticated.side_effect = DatabaseError("Test Exception")
@@ -231,9 +231,9 @@ def test_user_info_with_custom_user(django_elasticapm_client, client):
 
         MyUser = get_user_model()
         user = MyUser(my_username="admin")
-        user.set_password("admin")
+        user.set_password("longer_password_for_admin")
         user.save()
-        assert client.login(username="admin", password="admin")
+        assert client.login(username="admin", password="longer_password_for_admin")
         with pytest.raises(Exception):
             client.get(reverse("elasticapm-raise-exc"))
 
@@ -255,9 +255,9 @@ def test_user_info_with_custom_user_non_string_username(django_elasticapm_client
 
         MyIntUser = get_user_model()
         user = MyIntUser(my_username=1)
-        user.set_password("admin")
+        user.set_password("longer_password_for_admin")
         user.save()
-        assert client.login(username=1, password="admin")
+        assert client.login(username=1, password="longer_password_for_admin")
         with pytest.raises(Exception):
             client.get(reverse("elasticapm-raise-exc"))
 
@@ -572,7 +572,7 @@ def test_post_raw_data(django_elasticapm_client):
 def test_post_read_error_logging(django_elasticapm_client, caplog, rf):
     request = rf.post("/test", data="{}", content_type="application/json")
 
-    def read():
+    def read(*args, **kwargs):
         raise IOError("foobar")
 
     request.read = read
