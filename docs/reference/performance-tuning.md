@@ -60,6 +60,8 @@ The average amount of spans per transaction can influence how much time the agen
 
 To avoid these edge cases overloading both the agent and the APM Server, the agent stops recording spans when a specified limit is reached. You can configure this limit by changing the [`transaction_max_spans`](/reference/configuration.md#config-transaction-max-spans) setting.
 
+You can also ignore very short spans by configuring [`span_min_duration`](/reference/configuration.md#config-span-min-duration). If you only want to target leaf/exit spans, use [`exit_span_min_duration`](/reference/configuration.md#config-exit-span-min-duration).
+
 
 ## Span Stack Trace Collection [tuning-span-stack-trace-collection]
 
@@ -89,4 +91,3 @@ Reading source files inside a running application can cause a lot of disk I/O, a
 You can configure the Elastic APM agent to capture headers of both requests and responses ([`capture_headers`](/reference/configuration.md#config-capture-headers)), as well as request bodies ([`capture_body`](/reference/configuration.md#config-capture-body)). By default, capturing request bodies is disabled. Enabling it for transactions may introduce noticeable overhead, as well as increased storage use, depending on the nature of your POST requests. In most scenarios, we advise against enabling request body capturing for transactions, and only enable it if necessary for errors.
 
 Capturing request/response headers has less overhead on the agent, but can have an impact on storage use. If storage use is a problem for you, it might be worth disabling.
-

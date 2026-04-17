@@ -229,6 +229,7 @@ class Transaction(BaseSpan):
         self.config_span_compression_enabled = tracer.config.span_compression_enabled
         self.config_span_compression_exact_match_max_duration = tracer.config.span_compression_exact_match_max_duration
         self.config_span_compression_same_kind_max_duration = tracer.config.span_compression_same_kind_max_duration
+        self.config_span_min_duration = tracer.config.span_min_duration
         self.config_exit_span_min_duration = tracer.config.exit_span_min_duration
         self.config_transaction_max_spans = tracer.config.transaction_max_spans
 
@@ -675,6 +676,16 @@ class Span(BaseSpan):
     def discardable(self) -> bool:
         return self.leaf and not self.dist_tracing_propagated and self.outcome == constants.OUTCOME.SUCCESS
 
+    @property
+    def duration_discardable(self) -> bool:
+        return not self.dist_tracing_propagated and self.outcome == constants.OUTCOME.SUCCESS
+
+    @property
+    def min_duration(self) -> timedelta:
+        if self.leaf and self.transaction.config_exit_span_min_duration:
+            return self.transaction.config_exit_span_min_duration
+        return self.transaction.config_span_min_duration
+
     def end(self, skip_frames: int = 0, duration: Optional[float] = None) -> None:
         """
         End this span and queue it for sending.
@@ -710,7 +721,7 @@ class Span(BaseSpan):
         p.child_ended(self)
 
     def report(self) -> None:
-        if self.discardable and self.duration < self.transaction.config_exit_span_min_duration:
+        if self.duration_discardable and self.duration < self.min_duration:
             self.transaction.track_dropped_span(self)
             self.transaction.dropped_spans += 1
         elif self._cancelled:

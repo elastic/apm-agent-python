@@ -123,6 +123,17 @@ def test_config_snapshotting_span_compression_drop_exit_span(elasticapm_client):
     assert len(spans) == 0
 
 
+def test_config_snapshotting_span_compression_drop_span(elasticapm_client):
+    elasticapm_client.config.update(version="1", span_min_duration="10ms")
+    elasticapm_client.begin_transaction("foo")
+    elasticapm_client.config.update(version="2", span_min_duration="0ms")
+    with elasticapm.capture_span("x", leaf=False, span_type="a", span_subtype="b", span_action="c", duration=0.005):
+        pass
+    elasticapm_client.end_transaction()
+    spans = elasticapm_client.events[SPAN]
+    assert len(spans) == 0
+
+
 def test_config_snapshotting_span_compression_max_spans(elasticapm_client):
     elasticapm_client.config.update(version="1", transaction_max_spans="1")
     elasticapm_client.begin_transaction("foo")
