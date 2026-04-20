@@ -114,6 +114,7 @@ def test_kafka_consume(instrument, elasticapm_client, producer, consumer, topics
         producer.send("test", key=b"foo", value=b"bar")
         producer.send("test", key=b"baz", value=b"bazzinga")
         elasticapm_client.end_transaction("foo")
+        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -140,6 +141,7 @@ def test_kafka_consume_ongoing_transaction(instrument, elasticapm_client, produc
         producer.send("test", key=b"foo", value=b"bar")
         producer.send("test", key=b"baz", value=b"bazzinga")
         elasticapm_client.end_transaction("foo")
+        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -166,6 +168,7 @@ def test_kafka_consumer_ignore_topic(instrument, elasticapm_client, producer, co
         producer.send(topic="foo", key=b"foo", value=b"bar")
         producer.send("bar", key=b"foo", value=b"bar")
         producer.send("test", key=b"foo", value=b"bar")
+        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -186,6 +189,7 @@ def test_kafka_consumer_ignore_topic_ongoing_transaction(instrument, elasticapm_
         producer.send(topic="foo", key=b"foo", value=b"bar")
         producer.send("bar", key=b"foo", value=b"bar")
         producer.send("test", key=b"foo", value=b"bar")
+        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -205,6 +209,7 @@ def test_kafka_poll_ongoing_transaction(instrument, elasticapm_client, producer,
         time.sleep(0.2)
         producer.send("test", key=b"foo", value=b"bar")
         producer.send("test", key=b"baz", value=b"bazzinga")
+        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -249,6 +254,7 @@ def test_kafka_consumer_unsampled_transaction_handles_stop_iteration(
     def delayed_send():
         time.sleep(0.2)
         producer.send("test", key=b"foo", value=b"bar")
+        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
