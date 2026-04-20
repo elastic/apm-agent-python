@@ -58,3 +58,4 @@ FRAMEWORK:
   - grpc-newest
   - azurefunctions-newest
   - azure-newest
+  - aiokafka-newest
