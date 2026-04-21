@@ -111,10 +111,9 @@ def test_kafka_consume(instrument, elasticapm_client, producer, consumer, topics
     def delayed_send():
         time.sleep(0.2)
         elasticapm_client.begin_transaction("foo")
-        producer.send("test", key=b"foo", value=b"bar")
-        producer.send("test", key=b"baz", value=b"bazzinga")
+        producer.send("test", key=b"foo", value=b"bar").get(timeout=5)
+        producer.send("test", key=b"baz", value=b"bazzinga").get(timeout=5)
         elasticapm_client.end_transaction("foo")
-        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -138,10 +137,9 @@ def test_kafka_consume_ongoing_transaction(instrument, elasticapm_client, produc
     def delayed_send():
         time.sleep(0.2)
         elasticapm_client.begin_transaction("foo")
-        producer.send("test", key=b"foo", value=b"bar")
-        producer.send("test", key=b"baz", value=b"bazzinga")
+        producer.send("test", key=b"foo", value=b"bar").get(timeout=5)
+        producer.send("test", key=b"baz", value=b"bazzinga").get(timeout=5)
         elasticapm_client.end_transaction("foo")
-        producer.flush()
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -165,10 +163,9 @@ def test_kafka_consumer_ignore_topic(instrument, elasticapm_client, producer, co
 
     def delayed_send():
         time.sleep(0.2)
-        producer.send(topic="foo", key=b"foo", value=b"bar")
-        producer.send("bar", key=b"foo", value=b"bar")
-        producer.send("test", key=b"foo", value=b"bar")
-        producer.flush()
+        producer.send(topic="foo", key=b"foo", value=b"bar").get(timeout=5)
+        producer.send("bar", key=b"foo", value=b"bar").get(timeout=5)
+        producer.send("test", key=b"foo", value=b"bar").get(timeout=5)
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -186,10 +183,9 @@ def test_kafka_consumer_ignore_topic_ongoing_transaction(instrument, elasticapm_
 
     def delayed_send():
         time.sleep(0.2)
-        producer.send(topic="foo", key=b"foo", value=b"bar")
-        producer.send("bar", key=b"foo", value=b"bar")
-        producer.send("test", key=b"foo", value=b"bar")
-        producer.flush()
+        producer.send(topic="foo", key=b"foo", value=b"bar").get(timeout=5)
+        producer.send("bar", key=b"foo", value=b"bar").get(timeout=5)
+        producer.send("test", key=b"foo", value=b"bar").get(timeout=5)
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -207,9 +203,8 @@ def test_kafka_consumer_ignore_topic_ongoing_transaction(instrument, elasticapm_
 def test_kafka_poll_ongoing_transaction(instrument, elasticapm_client, producer, consumer, topics):
     def delayed_send():
         time.sleep(0.2)
-        producer.send("test", key=b"foo", value=b"bar")
-        producer.send("test", key=b"baz", value=b"bazzinga")
-        producer.flush()
+        producer.send("test", key=b"foo", value=b"bar").get(timeout=5)
+        producer.send("test", key=b"baz", value=b"bazzinga").get(timeout=5)
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
@@ -253,8 +248,7 @@ def test_kafka_consumer_unsampled_transaction_handles_stop_iteration(
 ):
     def delayed_send():
         time.sleep(0.2)
-        producer.send("test", key=b"foo", value=b"bar")
-        producer.flush()
+        producer.send("test", key=b"foo", value=b"bar").get(timeout=5)
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
