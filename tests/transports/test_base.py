@@ -165,6 +165,8 @@ def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
 
 
 def _cleanup_flush_mock_buffers(mock_flush):
+    if mock_flush.call_args is None:
+        return
     args, kwargs = mock_flush.call_args
     buffer = args[0]
     buffer.close()
