@@ -47,8 +47,10 @@ def test_cpu_mem_from_psutil(elasticapm_client):
     # we can't really test any specific values here as it depends on the system state.
     # Mocking is also not really a viable choice, as we would then lose the "integration testing"
     # nature of this test with different versions of psutil
-    assert 0 < data["samples"]["system.cpu.total.norm.pct"]["value"] < 1
-    assert 0 < data["samples"]["system.process.cpu.total.norm.pct"]["value"] < 1
+    # Please note that cpu percentage may be > 1 on multi-threading applications using more
+    # than one core
+    assert data["samples"]["system.cpu.total.norm.pct"]["value"] > 0
+    assert data["samples"]["system.process.cpu.total.norm.pct"]["value"] > 0
 
     assert data["samples"]["system.memory.total"]["value"] > 0
     assert data["samples"]["system.memory.actual.free"]["value"] > 0
