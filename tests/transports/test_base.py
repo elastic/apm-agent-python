@@ -165,8 +165,6 @@ def test_api_request_time_dynamic(mock_send, caplog, elasticapm_client):
 
 
 def _cleanup_flush_mock_buffers(mock_flush):
-    if mock_flush.call_args is None:
-        return
     args, kwargs = mock_flush.call_args
     buffer = args[0]
     buffer.close()
@@ -180,7 +178,7 @@ def test_api_request_size_dynamic(mock_flush, caplog, elasticapm_client):
     try:
         with caplog.at_level("DEBUG", "elasticapm.transport"):
             transport.queue("error", "".join(random.choice(string.ascii_letters) for i in range(2000)))
-            transport._flushed.wait(timeout=0.1)
+            transport.flush()
         _cleanup_flush_mock_buffers(mock_flush)
         assert mock_flush.call_count == 1
         elasticapm_client.config.update(version="1", api_request_size="1mb")
