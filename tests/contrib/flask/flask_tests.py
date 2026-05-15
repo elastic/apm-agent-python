@@ -266,6 +266,7 @@ def test_framework_name(flask_app):
     assert apm.client.config.framework_name == "flask"
     app_info = apm.client.get_service_info()
     assert app_info["framework"]["name"] == "flask"
+    assert app_info["framework"]["version"]
     apm.client.close()
 
     # Cleanup -- we don't use the flask_apm_client fixture here because it uses
