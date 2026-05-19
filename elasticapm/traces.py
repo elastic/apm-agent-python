@@ -1280,7 +1280,9 @@ def set_context(data, key="custom") -> None:
 set_custom_context = functools.partial(set_context, key="custom")
 
 
-def set_user_context(username=None, email=None, user_id=None) -> None:
+def set_user_context(
+    username: Optional[str] = None, email: Optional[str] = None, user_id: Optional[Union[str, int]] = None
+) -> None:
     data = {}
     if username is not None:
         data["username"] = encoding.keyword_field(username)
