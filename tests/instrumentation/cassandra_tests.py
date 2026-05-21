@@ -63,12 +63,10 @@ def cassandra_session(cassandra_cluster):
         session.execute("DROP KEYSPACE testkeyspace;")
     except ConfigurationException:
         pass
-    session.execute(
-        """
+    session.execute("""
         CREATE KEYSPACE testkeyspace
         WITH REPLICATION = { 'class' : 'SimpleStrategy' ,'replication_factor' : 1 }
-    """
-    )
+    """)
     session.execute("USE testkeyspace;")
     session.execute("CREATE TABLE testkeyspace.users ( id UUID PRIMARY KEY, name text);")
     yield session
@@ -98,12 +96,10 @@ def test_cassandra_connect(instrument, elasticapm_client, cassandra_cluster):
 def test_cassandra_connect_keyspace(instrument, elasticapm_client, cassandra_cluster):
     session = cassandra_cluster.connect()
     try:
-        session.execute(
-            """
+        session.execute("""
             CREATE KEYSPACE testkeyspace
             WITH REPLICATION = { 'class' : 'SimpleStrategy' ,'replication_factor' : 1 }
-        """
-        )
+        """)
         elasticapm_client.begin_transaction("transaction.test")
         sess = cassandra_cluster.connect("testkeyspace")
         elasticapm_client.end_transaction("test")
@@ -185,19 +181,14 @@ def test_signature_create_keyspace():
 
 
 def test_signature_create_columnfamily():
-    assert (
-        extract_signature(
-            """CREATE COLUMNFAMILY users (
+    assert extract_signature("""CREATE COLUMNFAMILY users (
   userid text PRIMARY KEY,
   first_name text,
   last_name text,
   emails set<text>,
   top_scores list<int>,
   todo map<timestamp, text>
-);"""
-        )
-        == "CREATE COLUMNFAMILY"
-    )
+);""") == "CREATE COLUMNFAMILY"
 
 
 def test_select_from_collection():
