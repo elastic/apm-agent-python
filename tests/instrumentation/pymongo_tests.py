@@ -396,7 +396,7 @@ def test_mongodb_span_compression(instrument, elasticapm_client, mongo_database)
     composite_spans = [span for span in spans if "composite" in span]
     assert len(composite_spans) == 1
     assert composite_spans[0]["composite"]["compression_strategy"] == "exact_match"
-    assert composite_spans[0]["composite"]["count"] >= 2
+    assert composite_spans[0]["composite"]["count"] > 1
     assert sum(span.get("composite", {}).get("count", 1) for span in spans) == 5
 
 
