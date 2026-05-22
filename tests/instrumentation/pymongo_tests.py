@@ -393,7 +393,11 @@ def test_mongodb_span_compression(instrument, elasticapm_client, mongo_database)
     elasticapm_client.end_transaction("transaction.test")
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
-    assert len(spans) == 1
+    composite_spans = [span for span in spans if "composite" in span]
+    assert len(composite_spans) == 1
+    assert composite_spans[0]["composite"]["compression_strategy"] == "exact_match"
+    assert composite_spans[0]["composite"]["count"] >= 2
+    assert sum(span.get("composite", {}).get("count", 1) for span in spans) == 5
 
 
 def _get_pymongo_span(spans):
