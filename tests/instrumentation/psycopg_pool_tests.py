@@ -60,6 +60,20 @@ def make_conninfo():
 
 
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgreSQL not configured")
+def test_connection_connect_generates_span(instrument, elasticapm_client):
+    elasticapm_client.begin_transaction("request")
+    try:
+        connection = psycopg.Connection.connect(**connect_kwargs())
+        connection.close()
+    finally:
+        elasticapm_client.end_transaction("200")
+
+    spans = elasticapm_client.events[SPAN]
+    assert len(spans) == 1
+    assert spans[0]["action"] == "connect"
+
+
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgreSQL not configured")
 def test_pool_generates_spans(instrument, elasticapm_client):
     with pool_mod.ConnectionPool(
         make_conninfo(),
@@ -78,7 +92,6 @@ def test_pool_generates_spans(instrument, elasticapm_client):
             elasticapm_client.end_transaction("200")
 
     spans = elasticapm_client.events[SPAN]
-    # Verify that connect span and query span are generated
-    assert len(spans) >= 2
-    assert any(span.get("action") == "connect" for span in spans)
-    assert any(span.get("context", {}).get("db", {}).get("type") == "sql" for span in spans)
+    span = next(span for span in spans if span["action"] == "query")
+    assert span["action"] == "query"
+    assert span["context"]["db"]["type"] == "sql"
