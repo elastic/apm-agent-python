@@ -74,7 +74,7 @@ def test_connection_connect_generates_span(instrument, elasticapm_client):
 
 
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgreSQL not configured")
-def test_pool_generates_spans(instrument, elasticapm_client):
+def test_pool_generates_query_span(instrument, elasticapm_client):
     with pool_mod.ConnectionPool(
         make_conninfo(),
         min_size=1,
