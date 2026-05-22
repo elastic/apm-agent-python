@@ -279,3 +279,12 @@ def test_psycopg_connection(instrument, elasticapm_transaction, postgres_connect
     host = os.environ.get("POSTGRES_HOST", "localhost")
     assert span["name"] == f"psycopg.connect {host}:5432"
     assert span["action"] == "connect"
+
+
+@pytest.mark.integrationtest
+@pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
+def test_server_cursor_execute(instrument, postgres_connection, elasticapm_client):
+    cursor = postgres_connection.cursor(name="server_cursor")
+    assert isinstance(cursor, psycopg.ServerCursor)
+    record = cursor.execute(query="SELECT 1", params=None, binary=True)
+    assert record

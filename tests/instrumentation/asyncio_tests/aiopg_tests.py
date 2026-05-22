@@ -119,16 +119,14 @@ async def test_composable_queries(instrument, cursor, elasticapm_client):
 
 
 async def test_callproc(instrument, cursor, elasticapm_client):
-    await cursor.execute(
-        """
+    await cursor.execute("""
         CREATE OR REPLACE FUNCTION squareme(me INT)
         RETURNS INTEGER
         LANGUAGE SQL
         AS $$
             SELECT me*me;
         $$;
-        """
-    )
+        """)
     elasticapm_client.begin_transaction("test")
     await cursor.callproc("squareme", [2])
     result = await cursor.fetchall()

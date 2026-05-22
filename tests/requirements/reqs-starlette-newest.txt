@@ -1,4 +1,4 @@
-starlette>=0.15
+starlette>0.15,<1
 aiofiles
 httpx
 flask

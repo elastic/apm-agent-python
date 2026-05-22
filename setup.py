@@ -41,7 +41,6 @@ full out-of-the-box support for many of the popular frameworks, including
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import ast
-import codecs
 import os
 
 from setuptools import setup
@@ -68,7 +67,7 @@ def get_version():
 
     :return: a string, indicating the version
     """
-    version_file = codecs.open(os.path.join("elasticapm", "version.py"), encoding="utf-8")
+    version_file = open(os.path.join("elasticapm", "version.py"), encoding="utf-8")
     for line in version_file:
         if line.startswith("__version__"):
             version_tuple = ast.literal_eval(line.split(" = ")[1])

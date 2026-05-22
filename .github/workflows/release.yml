@@ -13,15 +13,16 @@ permissions:
 jobs:
   build-distribution:
     permissions:
+      artifact-metadata: write
       attestations: write
-      id-token: write
       contents: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/build-distribution
       - name: generate build provenance
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest@v4
         with:
           subject-path: "${{ github.workspace }}/build/dist/elastic-apm-python-lambda-layer.zip"
 
@@ -35,15 +36,16 @@ jobs:
 
   packages:
     permissions:
+      artifact-metadata: write
       attestations: write
-      id-token: write
       contents: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/packages
       - name: generate build provenance
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest@v4
         with:
           subject-path: "${{ github.workspace }}/dist/*"
 
@@ -56,19 +58,19 @@ jobs:
     permissions:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         with:
           name: packages
           path: dist
       - name: Upload pypi.org
         if: startsWith(github.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           repository-url: https://upload.pypi.org/legacy/
       - name: Upload test.pypi.org
         if: ${{ ! startsWith(github.ref, 'refs/tags') }}
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           repository-url: https://test.pypi.org/legacy/
 
@@ -80,8 +82,8 @@ jobs:
       - build-distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         with:
           name: build-distribution
           path: ./build
@@ -96,11 +98,11 @@ jobs:
           VERSION=${VERSION//./-}
 
           ELASTIC_LAYER_NAME="elastic-apm-python-${VERSION}" .ci/publish-aws.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: startsWith(github.ref, 'refs/tags')
         with:
           name: arn-file
-          path: ".arn-file.md"
+          path: "${{ github.workspace }}/.arn-file.md"
           if-no-files-found: error
 
   publish-docker:
@@ -108,9 +110,10 @@ jobs:
       - build-distribution
     runs-on: ubuntu-latest
     permissions:
+      artifact-metadata: write
       attestations: write
-      id-token: write
       contents: write
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -118,26 +121,28 @@ jobs:
     env:
       DOCKER_IMAGE_NAME: docker.elastic.co/observability/apm-agent-python
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        with:
+          cache-binary: false
 
       - name: Log in to the Elastic Container registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ${{ secrets.ELASTIC_DOCKER_REGISTRY }}
           username: ${{ secrets.ELASTIC_DOCKER_USERNAME }}
           password: ${{ secrets.ELASTIC_DOCKER_PASSWORD }}
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: build-distribution
           path: ./build
 
       - name: Extract metadata (tags, labels)
         id: docker-meta
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f  # v5.8.0
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf  # v6.0.0
         with:
           images: ${{ env.DOCKER_IMAGE_NAME }}
           tags: |
@@ -148,7 +153,7 @@ jobs:
 
       - name: Build and push image
         id: docker-push
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83  # v6.18.0
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f  # v7.1.0
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -160,7 +165,7 @@ jobs:
             AGENT_DIR=./build/dist/package/python
 
       - name: generate build provenance (containers)
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest@v4
         with:
           subject-name: "${{ env.DOCKER_IMAGE_NAME }}"
           subject-digest: ${{ steps.docker-push.outputs.digest }}
@@ -174,8 +179,8 @@ jobs:
     if: startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         with:
           name: arn-file
       - name: Create GitHub Draft Release

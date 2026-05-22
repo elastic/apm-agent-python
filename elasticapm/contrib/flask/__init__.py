@@ -123,7 +123,11 @@ class ElasticAPM(object):
 
             if "framework_name" not in defaults:
                 defaults["framework_name"] = "flask"
-                defaults["framework_version"] = getattr(flask, "__version__", "<0.7")
+                try:
+                    flask_version = __import__("importlib.metadata").metadata.version("flask")
+                except ImportError:
+                    flask_version = getattr(flask, "__version__", "<0.7")
+                defaults["framework_version"] = flask_version
 
             self.client = self.client_cls(config, **defaults)
 

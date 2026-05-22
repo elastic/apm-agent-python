@@ -28,7 +28,6 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import codecs
 import gzip
 import io
 import itertools
@@ -75,11 +74,11 @@ with open(os.path.join(cur_dir, "upstream", "json-specs", "span_types.json")) as
     SPAN_TYPES = json.load(f)
 
 
-with codecs.open(ERRORS_SCHEMA, encoding="utf8") as errors_json, codecs.open(
+with open(ERRORS_SCHEMA, encoding="utf8") as errors_json, open(
     TRANSACTIONS_SCHEMA, encoding="utf8"
-) as transactions_json, codecs.open(SPAN_SCHEMA, encoding="utf8") as span_json, codecs.open(
+) as transactions_json, open(SPAN_SCHEMA, encoding="utf8") as span_json, open(
     METRICSET_SCHEMA, encoding="utf8"
-) as metricset_json, codecs.open(
+) as metricset_json, open(
     METADATA_SCHEMA, encoding="utf8"
 ) as metadata_json:
     VALIDATORS = {

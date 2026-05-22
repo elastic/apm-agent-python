@@ -32,6 +32,29 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.25.0]]
+==== 6.25.0 - 2025-12-23
+
+[float]
+===== Features
+
+* Introduce `ELASTIC_APM_SKIP_SERVER_INFO` to reduce overhead on serverless with APM server 8.7.1+ {pull}2516[#2516]
+* List all exported symbols in elasticapm module  `__all__` {pull}2504[#2504]
+
+[float]
+===== Bug fixes
+
+* Handle Tornado 6.5.3 `HttpHeaders` `in` operator behavior change {pull}2512[#2512]
+
+[[release-notes-6.24.1]]
+==== 6.24.1 - 2025-11-21
+
+[float]
+===== Bug fixes
+
+* Fix handling of psycopg ServerCursor and AsyncServerCursor instrumentation {pull}2489[#2489]
+* Fix contrib/opentelemetry set_status to match base signature {pull}2457[#2457]
+
 [[release-notes-6.24.0]]
 ==== 6.24.0 - 2025-08-12
 
