@@ -32,7 +32,7 @@ import pytest
 
 grpc = pytest.importorskip("grpc")
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 pytestmark = pytest.mark.grpc
 
@@ -209,7 +209,7 @@ class TestGRPCServerInstrumentation:
                 kwargs={},
             )
 
-        interceptors_passed = wrapped.call_args.kwargs["interceptors"]
+        interceptors_passed = wrapped.call_args[1]["interceptors"]
         assert interceptors_passed[0] is MockInterceptor.return_value
         assert result is fake_server
 
@@ -229,7 +229,7 @@ class TestGRPCServerInstrumentation:
                 kwargs={"interceptors": [existing]},
             )
 
-        interceptors_passed = wrapped.call_args.kwargs["interceptors"]
+        interceptors_passed = wrapped.call_args[1]["interceptors"]
         assert interceptors_passed[0] is MockInterceptor.return_value
         assert interceptors_passed[1] is existing
 
@@ -251,7 +251,7 @@ class TestGRPCServerInstrumentation:
                 kwargs={},
             )
 
-        call_args = wrapped.call_args.args
+        call_args = wrapped.call_args[0]
         interceptors_passed = call_args[2]
         assert interceptors_passed[0] is MockInterceptor.return_value
         assert interceptors_passed[1] is existing
@@ -272,7 +272,7 @@ class TestGRPCServerInstrumentation:
                 kwargs={},
             )
 
-        interceptors_passed = wrapped.call_args.kwargs["interceptors"]
+        interceptors_passed = wrapped.call_args[1]["interceptors"]
         assert interceptors_passed[0] is MockInterceptor.return_value
 
 
@@ -298,7 +298,7 @@ class TestGRPCAsyncServerInstrumentation:
                 kwargs={},
             )
 
-        interceptors_passed = wrapped.call_args.kwargs["interceptors"]
+        interceptors_passed = wrapped.call_args[1]["interceptors"]
         assert interceptors_passed[0] is MockInterceptor.return_value
         assert result is fake_server
 
@@ -318,7 +318,7 @@ class TestGRPCAsyncServerInstrumentation:
                 kwargs={"interceptors": [existing]},
             )
 
-        interceptors_passed = wrapped.call_args.kwargs["interceptors"]
+        interceptors_passed = wrapped.call_args[1]["interceptors"]
         assert interceptors_passed[0] is MockInterceptor.return_value
         assert interceptors_passed[1] is existing
 
@@ -339,7 +339,7 @@ class TestGRPCAsyncServerInstrumentation:
                 kwargs={},
             )
 
-        call_args = wrapped.call_args.args
+        call_args = wrapped.call_args[0]
         interceptors_passed = call_args[2]
         assert interceptors_passed[0] is MockInterceptor.return_value
         assert interceptors_passed[1] is existing
@@ -360,5 +360,5 @@ class TestGRPCAsyncServerInstrumentation:
                 kwargs={},
             )
 
-        interceptors_passed = wrapped.call_args.kwargs["interceptors"]
+        interceptors_passed = wrapped.call_args[1]["interceptors"]
         assert interceptors_passed[0] is MockInterceptor.return_value
