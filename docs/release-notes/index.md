@@ -26,6 +26,17 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 % ### Fixes [elastic-apm-python-agent-versionext-fixes]
 
+## 6.26.0 [elastic-apm-python-agent-6260-release-notes]
+**Release date:** May 25, 2026
+
+### Fixes [elastic-apm-python-agent-6260-fixes]
+
+* Remove usage of modules and patterns deprecated on recent Python versions [#2531](https://github.com/elastic/apm-agent-python/pull/2531)
+* Avoid warnings reading recent Flask versions [#2635](https://github.com/elastic/apm-agent-python/pull/2635)
+* Add back instrumentation of the connection object with ``psycopg[pool]`` [#2460](https://github.com/elastic/apm-agent-python/pull/2460)
+* Fix GRPC target reporting when it does not contain the port [#2584](https://github.com/elastic/apm-agent-python/pull/2584)
+* Do not consider canceled span available for compression [#2651](https://github.com/elastic/apm-agent-python/pull/2651)
+
 ## 6.25.0 [elastic-apm-python-agent-6250-release-notes]
 **Release date:** December 23, 2025
 
