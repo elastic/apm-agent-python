@@ -204,6 +204,48 @@ def test_leaf_tracing(tracer):
     assert {t["name"] for t in spans} == signatures
 
 
+def test_cancelled_spans_do_not_compress_with_later_spans(elasticapm_client):
+    elasticapm_client.config.update(
+        "1",
+        span_compression_enabled=True,
+        span_compression_exact_match_max_duration="50ms",
+        span_compression_same_kind_max_duration="50ms",
+    )
+    elasticapm_client.begin_transaction("transaction.test")
+
+    extra = {
+        "message": {"queue": {"name": "topic"}},
+        "destination": {"service": {"name": "kafka", "resource": "kafka/topic", "type": "messaging"}},
+    }
+    with capture_span(
+        "Kafka RECEIVE from topic",
+        span_type="messaging",
+        span_subtype="kafka",
+        span_action="receive",
+        extra=extra.copy(),
+        leaf=True,
+        duration=0.01,
+    ) as span:
+        span.cancel()
+
+    with capture_span(
+        "Kafka RECEIVE from topic",
+        span_type="messaging",
+        span_subtype="kafka",
+        span_action="receive",
+        extra=extra.copy(),
+        leaf=True,
+        duration=0.01,
+    ):
+        pass
+
+    elasticapm_client.end_transaction("transaction")
+
+    spans = elasticapm_client.events[SPAN]
+    assert len(spans) == 1
+    assert spans[0]["name"] == "Kafka RECEIVE from topic"
+
+
 def test_get_trace_parent_header(elasticapm_client):
     trace_parent = TraceParent.from_string("00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-03")
     transaction = elasticapm_client.begin_transaction("test", trace_parent=trace_parent)
