@@ -26,6 +26,13 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 % ### Fixes [elastic-apm-python-agent-versionext-fixes]
 
+## 6.26.1 [elastic-apm-python-agent-6261-release-notes]
+**Release date:** May 25, 2026
+
+### Fixes [elastic-apm-python-agent-6261-fixes]
+
+*  Make AWS lambda layers publication more robust against regions failure [#2658](https://github.com/elastic/apm-agent-python/pull/2658)
+
 ## 6.26.0 [elastic-apm-python-agent-6260-release-notes]
 **Release date:** May 25, 2026
 
