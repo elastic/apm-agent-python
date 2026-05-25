@@ -77,7 +77,12 @@ def producer(topics):
 
 @pytest.fixture()
 def consumer(topics):
-    consumer = KafkaConsumer(bootstrap_servers=f"{KAFKA_HOST}:9092", consumer_timeout_ms=500)
+    consumer = KafkaConsumer(
+        bootstrap_servers=f"{KAFKA_HOST}:9092",
+        consumer_timeout_ms=500,
+        # Unique topics can be produced to before the consumer's initial offset is resolved.
+        auto_offset_reset="earliest",
+    )
     consumer.subscribe(topics=topics)
     deadline = time.time() + 5
     while not consumer.assignment() and time.time() < deadline:
@@ -163,6 +168,8 @@ def test_kafka_consume_ongoing_transaction(instrument, elasticapm_client, produc
     thread = threading.Thread(target=delayed_send)
     thread.start()
     transaction = elasticapm_client.begin_transaction("foo")
+    # Give Kafka enough time to resolve offsets and deliver both delayed records before iteration stops.
+    consumer.config["consumer_timeout_ms"] = 2000
     for item in consumer:
         pass
     thread.join()
