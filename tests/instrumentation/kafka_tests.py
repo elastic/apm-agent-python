@@ -132,6 +132,8 @@ def test_kafka_consume(instrument, elasticapm_client, producer, consumer, topics
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
+    # Give Kafka enough time to resolve offsets and deliver both delayed records before iteration stops.
+    consumer.config["consumer_timeout_ms"] = 2000
     for item in consumer:
         with elasticapm.capture_span("foo"):
             pass
