@@ -199,6 +199,8 @@ def test_kafka_consumer_ignore_topic(instrument, elasticapm_client, producer, co
 
     thread = threading.Thread(target=delayed_send)
     thread.start()
+    # Give Kafka enough time to resolve offsets and deliver all delayed records before iteration stops.
+    consumer.config["consumer_timeout_ms"] = 2000
     for item in consumer:
         with elasticapm.capture_span("test"):
             assert item
