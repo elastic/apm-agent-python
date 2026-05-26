@@ -224,6 +224,8 @@ def test_kafka_consumer_ignore_topic_ongoing_transaction(instrument, elasticapm_
     thread = threading.Thread(target=delayed_send)
     thread.start()
     transaction = elasticapm_client.begin_transaction("foo")
+    # Give Kafka enough time to resolve offsets and deliver all delayed records before iteration stops.
+    consumer.config["consumer_timeout_ms"] = 2000
     for item in consumer:
         pass
     thread.join()
