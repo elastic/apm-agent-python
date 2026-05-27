@@ -379,7 +379,7 @@ def test_bulk_execute(instrument, elasticapm_client, mongo_database):
         {
             "span_compression_enabled": True,
             "span_compression_same_kind_max_duration": "5ms",
-            "span_compression_exact_match_max_duration": "50ms",
+            "span_compression_exact_match_max_duration": "1s",
         }
     ],
     indirect=True,
@@ -394,6 +394,8 @@ def test_mongodb_span_compression(instrument, elasticapm_client, mongo_database)
     transactions = elasticapm_client.events[TRANSACTION]
     spans = elasticapm_client.spans_for_transaction(transactions[0])
     assert len(spans) == 1
+    assert spans[0]["composite"]["compression_strategy"] == "exact_match"
+    assert spans[0]["composite"]["count"] == 5
 
 
 def _get_pymongo_span(spans):
