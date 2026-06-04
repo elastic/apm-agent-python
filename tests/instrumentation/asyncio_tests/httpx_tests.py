@@ -31,6 +31,8 @@
 import pytest  # isort:skip
 
 httpx = pytest.importorskip("httpx")  # isort:skip
+httpcore = pytest.importorskip("httpcore")  # isort:skip
+
 import urllib.parse
 
 from elasticapm.conf import constants
@@ -40,6 +42,7 @@ from elasticapm.utils.disttracing import TraceParent
 
 pytestmark = [pytest.mark.httpx, pytest.mark.asyncio]
 
+httpcore_version = tuple(map(int, httpcore.__version__.split(".")[:3]))
 httpx_version = tuple(map(int, httpx.__version__.split(".")[:3]))
 
 if httpx_version < (0, 20):
@@ -194,3 +197,28 @@ async def test_httpx_streaming(instrument, elasticapm_client, waiting_httpserver
     span = elasticapm_client.spans_for_transaction(transactions[0])[0]
     assert span["type"] == "external"
     assert span["subtype"] == "http"
+
+
+@pytest.mark.skipif(httpcore_version < (0, 17, 3), reason="AsyncMockBackend not available on older versions")
+async def test_default_port_handling(instrument, elasticapm_client):
+    url = "https://example.com/"
+
+    elasticapm_client.begin_transaction("transaction")
+    network_backend = httpcore.AsyncMockBackend(
+        buffer=[
+            b"HTTP/1.1 200 OK\r\n",
+            b"Content-Type: plain/text\r\n",
+            b"Content-Length: 13\r\n",
+            b"\r\n",
+            b"Hello, world!",
+        ]
+    )
+    async with httpcore.AsyncConnectionPool(network_backend=network_backend) as pool:
+        await pool.request("GET", url)
+    elasticapm_client.end_transaction("transaction")
+
+    transactions = elasticapm_client.events[TRANSACTION]
+    span = elasticapm_client.spans_for_transaction(transactions[0])[0]
+
+    assert span["name"] == "GET example.com"
+    assert span["context"]["http"]["url"] == url
