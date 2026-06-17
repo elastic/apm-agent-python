@@ -469,9 +469,11 @@ class _lambda_transaction(object):
             data = transport._json_serializer({"metadata": self.client.build_metadata()}) + "\n"
             data += transport._json_serializer({"transaction": transaction.to_dict()})
             partial_transaction_url = urllib.parse.urljoin(
-                self.client.config.server_url
-                if self.client.config.server_url.endswith("/")
-                else self.client.config.server_url + "/",
+                (
+                    self.client.config.server_url
+                    if self.client.config.server_url.endswith("/")
+                    else self.client.config.server_url + "/"
+                ),
                 "register/transaction",
             )
             try:

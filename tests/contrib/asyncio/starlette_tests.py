@@ -32,7 +32,6 @@ from tests.fixtures import TempStoreClient
 
 import pytest  # isort:skip
 
-
 starlette = pytest.importorskip("starlette")  # isort:skip
 
 import os

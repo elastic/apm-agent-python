@@ -668,7 +668,12 @@ class Span(BaseSpan):
         Determine if this span is eligible for compression.
         """
         if self.transaction.config_span_compression_enabled:
-            return self.leaf and not self.dist_tracing_propagated and self.outcome in (None, constants.OUTCOME.SUCCESS)
+            return (
+                self.leaf
+                and not self._cancelled
+                and not self.dist_tracing_propagated
+                and self.outcome in (None, constants.OUTCOME.SUCCESS)
+            )
         return False
 
     @property

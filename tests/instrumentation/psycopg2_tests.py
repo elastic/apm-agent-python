@@ -447,16 +447,14 @@ def test_psycopg2_composable_query_works(instrument, postgres_connection, elasti
 @pytest.mark.skipif(not has_postgres_configured, reason="PostgresSQL not configured")
 def test_psycopg2_call_stored_procedure(instrument, postgres_connection, elasticapm_client):
     cursor = postgres_connection.cursor()
-    cursor.execute(
-        """
+    cursor.execute("""
         CREATE OR REPLACE FUNCTION squareme(me INT)
         RETURNS INTEGER
         LANGUAGE SQL
         AS $$
             SELECT me*me;
         $$;
-        """
-    )
+        """)
     elasticapm_client.begin_transaction("test")
     cursor.callproc("squareme", [2])
     result = cursor.fetchall()

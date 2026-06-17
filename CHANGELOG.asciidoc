@@ -32,6 +32,26 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.26.1]]
+==== 6.26.1 - 2026-05-25
+
+[float]
+===== Bug fixes
+
+* Make AWS lambda layers publication more robust against regions failure {pull}2658[#2658]
+
+[[release-notes-6.26.0]]
+==== 6.26.0 - 2026-05-25
+
+[float]
+===== Bug fixes
+
+* Remove usage of modules and patterns deprecated on recent Python versions {pull}2531[#2531]
+* Avoid warnings reading recent Flask versions {pull}2635[#2635]
+* Add back instrumentation of the connection object with ``psycopg[pool]`` {pull}2460[#2460]
+* Fix GRPC target reporting when it does not contain the port {pull}2584[#2584]
+* Do not consider canceled span available for compression {pull}2651[#2651]
+
 [[release-notes-6.25.0]]
 ==== 6.25.0 - 2025-12-23
 

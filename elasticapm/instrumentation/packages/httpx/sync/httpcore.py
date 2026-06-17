@@ -47,7 +47,7 @@ class HTTPCoreInstrumentation(AbstractInstrumentedModule):
     def call(self, module, method, wrapped, instance, args, kwargs):
         url, method, headers = utils.get_request_data(args, kwargs)
         scheme, host, port, target = url
-        if port != default_ports.get(scheme):
+        if port is not None and port != default_ports.get(scheme):
             host += ":" + str(port)
 
         signature = "%s %s" % (method.upper(), host)

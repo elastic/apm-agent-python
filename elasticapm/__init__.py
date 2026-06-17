@@ -49,7 +49,6 @@ from elasticapm.traces import (  # noqa: F401
 )
 from elasticapm.utils.disttracing import trace_parent_from_headers, trace_parent_from_string  # noqa: F401
 
-
 _activation_method = None
 
 try:
