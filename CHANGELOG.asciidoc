@@ -29,6 +29,14 @@ endif::[]
 //===== Bug fixes
 //
 
+[[release-notes-unreleased]]
+==== Unreleased
+
+[float]
+===== Bug fixes
+
+* Fix ``AttributeError`` on FastAPI >= 0.137 when resolving transaction names for routes added via ``include_router()``
+
 [[release-notes-6.x]]
 === Python Agent version 6.x
 

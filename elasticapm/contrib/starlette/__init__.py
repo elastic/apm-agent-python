@@ -53,6 +53,42 @@ from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.errors.client")
 
+try:
+    # FastAPI >= 0.137.2 exposes a public helper that flattens routes added via
+    # include_router() (nested under _IncludedRouter in 0.137) into matchable
+    # RouteContext objects. Older versions don't have it; see _flatten_routes().
+    from fastapi.routing import iter_route_contexts
+except ImportError:
+    iter_route_contexts = None
+
+
+def _flatten_routes(routes):
+    """
+    Yield the matchable routes from an app's route list.
+
+    FastAPI 0.137 nests routes added via include_router() under _IncludedRouter
+    tree nodes, which expose no ``path`` attribute. They have to be flattened
+    into their effective route contexts (each providing matches() and the full
+    templated path) before they can be matched against a scope.
+
+    FastAPI >= 0.137.2 provides the public iter_route_contexts() for this, which
+    also wraps plain routes uniformly. On older versions fall back to the
+    private _IncludedRouter.effective_route_contexts(), and on FastAPI < 0.137
+    (no _IncludedRouter) the routes are already matchable as-is.
+    """
+    if any(hasattr(route, "effective_route_contexts") for route in routes):
+        if iter_route_contexts is not None:
+            yield from iter_route_contexts(routes)
+            return
+        for route in routes:
+            if hasattr(route, "effective_route_contexts"):
+                yield from route.effective_route_contexts()
+            else:
+                yield route
+        return
+    for route in routes:
+        yield route
+
 
 def make_apm_client(config: Optional[Dict] = None, client_cls=Client, **defaults) -> Client:
     """Builds ElasticAPM client.
@@ -268,10 +304,12 @@ class ElasticAPM:
         return route_name
 
     def _get_route_name(self, scope, routes, route_name=None):
-        for route in routes:
+        for route in _flatten_routes(routes):
             match, child_scope = route.matches(scope)
             if match == Match.FULL:
-                route_name = route.path
+                route_name = getattr(route, "path", None)
+                if route_name is None:
+                    continue
                 child_scope = {**scope, **child_scope}
                 if isinstance(route, Mount) and route.routes:
                     child_route_name = self._get_route_name(child_scope, route.routes, route_name)
@@ -281,4 +319,6 @@ class ElasticAPM:
                         route_name += child_route_name
                 return route_name
             elif match == Match.PARTIAL and route_name is None:
-                route_name = route.path
+                partial_path = getattr(route, "path", None)
+                if partial_path is not None:
+                    route_name = partial_path
