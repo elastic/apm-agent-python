@@ -37,6 +37,7 @@ import pytest
 import elasticapm.utils
 from elasticapm.conf import constants
 from elasticapm.utils import (
+    build_name_with_http_method_prefix,
     get_name_from_func,
     get_url_dict,
     getfqdn,
@@ -263,3 +264,19 @@ def test_getfqdn(invalidate_fqdn_cache):
 def test_getfqdn_caches(invalidate_fqdn_cache):
     elasticapm.utils.fqdn = "foo"
     assert getfqdn() == "foo"
+
+
+class Request:
+    method: "str" = "GET"
+
+
+@pytest.mark.parametrize(
+    "http_request,name,expected",
+    [
+        ("", None, "unknown route"),
+        (Request, None, "GET unknown route"),
+        (Request, "/foo", "GET /foo"),
+    ],
+)
+def test_build_name_with_http_method_prefix(http_request, name, expected):
+    assert build_name_with_http_method_prefix(name, http_request) == expected
