@@ -43,6 +43,7 @@ jobs:
     with:
       full-matrix: ${{ inputs.full-matrix }}
       skip-build: ${{ inputs.skip-build }}
+    secrets: inherit
 
   run-if-disabled:
     if: ${{ ! inputs.enabled }}
