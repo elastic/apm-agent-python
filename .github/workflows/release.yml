@@ -33,6 +33,7 @@ jobs:
       full-matrix: true
       enabled: ${{ startsWith(github.ref, 'refs/tags') }}
       skip-build: true
+    secrets: inherit
 
   packages:
     permissions:
