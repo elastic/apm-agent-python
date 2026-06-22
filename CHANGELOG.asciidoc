@@ -32,6 +32,15 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.26.2]]
+==== 6.26.2 - 2026-06-22
+
+[float]
+===== Bug fixes
+
+* Fix httpcore instrumentation handling of default port {pull}2669[#2669]
+* Handle FastAPI 0.137 ``_IncludedRouter`` in route name resolution {pull}2682[#2682]
+
 [[release-notes-6.26.1]]
 ==== 6.26.1 - 2026-05-25
 
