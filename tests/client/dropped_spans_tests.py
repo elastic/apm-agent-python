@@ -154,6 +154,68 @@ def test_transaction_fast_exit_span(elasticapm_client):
     assert metrics[1]["samples"]["span.self_time.sum.us"]["value"] == 100
 
 
+@pytest.mark.parametrize("elasticapm_client", [{"span_min_duration": "1ms"}], indirect=True)
+def test_transaction_fast_span(elasticapm_client):
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span(span_type="x", name="x", leaf=False, duration=0.002):  # not dropped, too long
+        pass
+    with elasticapm.capture_span(span_type="y", name="y", leaf=False, duration=0.0001):  # dropped
+        pass
+    elasticapm_client.end_transaction("foo", duration=2.2)
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.events[constants.SPAN]
+    assert len(spans) == 1
+    assert spans[0]["name"] == "x"
+    assert transaction["span_count"]["started"] == 2
+    assert transaction["span_count"]["dropped"] == 1
+
+
+@pytest.mark.parametrize(
+    "elasticapm_client", [{"span_min_duration": "10ms", "exit_span_min_duration": "1ms"}], indirect=True
+)
+def test_transaction_fast_span_exit_threshold_overrides(elasticapm_client):
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span(span_type="x", name="leaf", leaf=True, duration=0.002):
+        pass
+    with elasticapm.capture_span(span_type="y", name="non-leaf", leaf=False, duration=0.002):
+        pass
+    elasticapm_client.end_transaction("foo", duration=2.2)
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.events[constants.SPAN]
+    assert len(spans) == 1
+    assert spans[0]["name"] == "leaf"
+    assert transaction["span_count"]["started"] == 2
+    assert transaction["span_count"]["dropped"] == 1
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"span_min_duration": "1ms"}], indirect=True)
+def test_transaction_fast_span_not_dropped_on_failure(elasticapm_client):
+    elasticapm_client.begin_transaction("test_type")
+    with pytest.raises(ValueError):
+        with elasticapm.capture_span(span_type="x", name="x", leaf=False, duration=0.0001):
+            raise ValueError()
+    elasticapm_client.end_transaction("foo", duration=2.2)
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.events[constants.SPAN]
+    assert len(spans) == 1
+    assert spans[0]["outcome"] == constants.OUTCOME.FAILURE
+    assert transaction["span_count"]["started"] == 1
+    assert transaction["span_count"]["dropped"] == 0
+
+
+@pytest.mark.parametrize("elasticapm_client", [{"span_min_duration": "1ms"}], indirect=True)
+def test_transaction_fast_span_not_dropped_when_distributed_tracing_propagated(elasticapm_client):
+    elasticapm_client.begin_transaction("test_type")
+    with elasticapm.capture_span(span_type="x", name="x", leaf=False, duration=0.0001) as span:
+        span.dist_tracing_propagated = True
+    elasticapm_client.end_transaction("foo", duration=2.2)
+    transaction = elasticapm_client.events[constants.TRANSACTION][0]
+    spans = elasticapm_client.events[constants.SPAN]
+    assert len(spans) == 1
+    assert transaction["span_count"]["started"] == 1
+    assert transaction["span_count"]["dropped"] == 0
+
+
 def test_transaction_cancelled_span(elasticapm_client):
     elasticapm_client.begin_transaction("test_type")
     with elasticapm.capture_span("test") as span:
