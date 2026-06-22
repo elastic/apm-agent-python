@@ -34,12 +34,12 @@ import pytest  # isort:skip
 
 fastapi = pytest.importorskip("fastapi")  # isort:skip
 
-from fastapi import APIRouter, FastAPI  # noqa: E402
-from starlette.testclient import TestClient  # noqa: E402
+from fastapi import APIRouter, FastAPI
+from starlette.testclient import TestClient
 
-import elasticapm  # noqa: E402
-from elasticapm.conf import constants  # noqa: E402
-from elasticapm.contrib.starlette import ElasticAPM, make_apm_client  # noqa: E402
+import elasticapm
+from elasticapm.conf import constants
+from elasticapm.contrib.starlette import ElasticAPM, make_apm_client
 
 pytestmark = [pytest.mark.starlette]
 
