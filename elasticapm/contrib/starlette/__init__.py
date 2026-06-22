@@ -91,6 +91,10 @@ def _flatten_routes(routes):
         yield route
 
 
+def _is_mount_route(route):
+    return isinstance(route, Mount) or isinstance(getattr(route, "route", None), Mount)
+
+
 def make_apm_client(config: Optional[Dict] = None, client_cls=Client, **defaults) -> Client:
     """Builds ElasticAPM client.
 
@@ -310,7 +314,7 @@ class ElasticAPM:
             if match == Match.FULL:
                 route_name = route.path
                 child_scope = {**scope, **child_scope}
-                if isinstance(route, Mount) and route.routes:
+                if _is_mount_route(route) and route.routes:
                     child_route_name = self._get_route_name(child_scope, route.routes, route_name)
                     if child_route_name is None:
                         route_name = None
