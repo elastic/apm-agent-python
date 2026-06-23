@@ -26,4 +26,13 @@ Known issues are significant defects or limitations that may impact your impleme
 
 :::
 
-_No known issues_
+:::{dropdown} FastAPI 0.137+ causes 500 errors on every request
+**Details**
+On 06/14/2026, a known issue was discovered that FastAPI 0.137 changed how included routers are represented internally, introducing `_IncludedRouter` wrapper objects that do not expose a `.path` attribute. The ElasticAPM Starlette/FastAPI middleware accessed `.path` unconditionally, causing an `AttributeError` and a 500 response on every HTTP request when using `app.include_router()`.
+
+**Workaround**
+Pin `fastapi<0.137` until you can upgrade to `elastic-apm>=6.26.2`.
+
+**Resolved**
+On 06/22/2026, this issue was resolved in elastic-apm [6.26.2](index.md).
+:::

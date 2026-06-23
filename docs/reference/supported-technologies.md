@@ -109,7 +109,7 @@ We support these Starlette versions:
 
 * >0.13.0,<1
 
-Any FastAPI version which uses a supported Starlette version should also be supported.
+Any FastAPI version which uses a supported Starlette version should also be supported. FastAPI>=0.137 requires elastic-apm>=6.26.2.
 
 
 ### GRPC [supported-grpc]
