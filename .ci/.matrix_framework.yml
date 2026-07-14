@@ -50,6 +50,7 @@ FRAMEWORK:
   - pymemcache-newest
   - graphene-2
   - httpx-newest
+  - httpx2-newest
   - httplib2-newest
   - prometheus_client-newest
   - sanic-newest
