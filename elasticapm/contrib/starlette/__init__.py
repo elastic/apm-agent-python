@@ -53,6 +53,47 @@ from elasticapm.utils.logging import get_logger
 
 logger = get_logger("elasticapm.errors.client")
 
+try:
+    # FastAPI >= 0.137.2 exposes a public helper that flattens routes added via
+    # include_router() (nested under _IncludedRouter in 0.137) into matchable
+    # RouteContext objects. Older versions don't have it; see _flatten_routes().
+    from fastapi.routing import iter_route_contexts
+except ImportError:
+    iter_route_contexts = None
+
+
+def _flatten_routes(routes):
+    """
+    Yield routes in the shape expected by Starlette's route matching.
+
+    FastAPI 0.137 changed include_router() to keep nested routers as
+    _IncludedRouter entries. Those entries do not expose ``path`` directly, so
+    they need to be expanded into effective route contexts before matching.
+
+    FastAPI >= 0.137.2 provides iter_route_contexts() for that expansion. For
+    0.137.0 and 0.137.1, use _IncludedRouter.effective_route_contexts(). Older
+    FastAPI versions and plain Starlette already expose matchable route objects.
+    """
+    # FastAPI 0.137+ may include _IncludedRouter placeholders.
+    if any(hasattr(route, "effective_route_contexts") for route in routes):
+        if iter_route_contexts is not None:
+            yield from iter_route_contexts(routes)
+            return
+        for route in routes:
+            if hasattr(route, "effective_route_contexts"):
+                yield from route.effective_route_contexts()
+            else:
+                yield route
+        return
+
+    # Older FastAPI and plain Starlette routes can be matched directly.
+    for route in routes:
+        yield route
+
+
+def _is_mount_route(route):
+    return isinstance(route, Mount) or isinstance(getattr(route, "route", None), Mount)
+
 
 def make_apm_client(config: Optional[Dict] = None, client_cls=Client, **defaults) -> Client:
     """Builds ElasticAPM client.
@@ -268,12 +309,12 @@ class ElasticAPM:
         return route_name
 
     def _get_route_name(self, scope, routes, route_name=None):
-        for route in routes:
+        for route in _flatten_routes(routes):
             match, child_scope = route.matches(scope)
             if match == Match.FULL:
                 route_name = route.path
                 child_scope = {**scope, **child_scope}
-                if isinstance(route, Mount) and route.routes:
+                if _is_mount_route(route) and route.routes:
                     child_route_name = self._get_route_name(child_scope, route.routes, route_name)
                     if child_route_name is None:
                         route_name = None

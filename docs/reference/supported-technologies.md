@@ -111,6 +111,10 @@ We support these Starlette versions:
 
 Any FastAPI version which uses a supported Starlette version should also be supported.
 
+::::{note}
+`fastapi>=0.137` requires `elastic-apm>=6.26.2`.
+::::
+
 
 ### GRPC [supported-grpc]
 

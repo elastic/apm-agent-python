@@ -26,12 +26,20 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 % ### Fixes [elastic-apm-python-agent-versionext-fixes]
 
+## 6.26.2 [elastic-apm-python-agent-6262-release-notes]
+**Release date:** June 22, 2026
+
+### Fixes [elastic-apm-python-agent-6262-fixes]
+
+* Fix httpcore instrumentation handling of default port [#2669](https://github.com/elastic/apm-agent-python/pull/2669)
+* Handle FastAPI 0.137 `_IncludedRouter` in route name resolution [#2682](https://github.com/elastic/apm-agent-python/pull/2682)
+
 ## 6.26.1 [elastic-apm-python-agent-6261-release-notes]
 **Release date:** May 25, 2026
 
 ### Fixes [elastic-apm-python-agent-6261-fixes]
 
-*  Make AWS lambda layers publication more robust against regions failure [#2658](https://github.com/elastic/apm-agent-python/pull/2658)
+* Make AWS lambda layers publication more robust against regions failure [#2658](https://github.com/elastic/apm-agent-python/pull/2658)
 
 ## 6.26.0 [elastic-apm-python-agent-6260-release-notes]
 **Release date:** May 25, 2026
@@ -40,7 +48,7 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 * Remove usage of modules and patterns deprecated on recent Python versions [#2531](https://github.com/elastic/apm-agent-python/pull/2531)
 * Avoid warnings reading recent Flask versions [#2635](https://github.com/elastic/apm-agent-python/pull/2635)
-* Add back instrumentation of the connection object with ``psycopg[pool]`` [#2460](https://github.com/elastic/apm-agent-python/pull/2460)
+* Add back instrumentation of the connection object with `psycopg[pool]` [#2460](https://github.com/elastic/apm-agent-python/pull/2460)
 * Fix GRPC target reporting when it does not contain the port [#2584](https://github.com/elastic/apm-agent-python/pull/2584)
 * Do not consider canceled span available for compression [#2651](https://github.com/elastic/apm-agent-python/pull/2651)
 
