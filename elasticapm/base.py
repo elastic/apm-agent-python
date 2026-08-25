@@ -336,6 +336,13 @@ class Client(object):
         if self.config.enabled:
             with self._thread_starter_lock:
                 for _, manager in sorted(self._thread_managers.items(), key=lambda item: item[1].start_stop_order):
+                    if not manager.is_started():
+                        # The threads belong to another process: we were inherited by a
+                        # pre-forked worker that has not started its own threads yet.
+                        # Stopping them from here touches objects this process does not
+                        # own, and on Python 3.13+ that can crash the interpreter.
+                        self.logger.debug("Not stopping threads started by pid %r", manager.pid)
+                        continue
                     manager.stop_thread()
         global CLIENT_SINGLETON
         CLIENT_SINGLETON = None

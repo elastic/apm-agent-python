@@ -527,6 +527,35 @@ def test_client_enabled(elasticapm_client):
             assert not manager.is_started()
 
 
+@pytest.mark.parametrize(
+    "elasticapm_client",
+    [{"enabled": True, "metrics_interval": "30s", "central_config": "true"}],
+    indirect=True,
+)
+def test_close_leaves_threads_of_another_process_alone(elasticapm_client):
+    """
+    A pre-forking server hands the worker a client whose thread managers still point at
+    the threads the parent started. Those threads do not exist in the worker, so close()
+    must leave them alone instead of cancelling them.
+    """
+    metrics = elasticapm_client._thread_managers["metrics"]
+    config = elasticapm_client._thread_managers["config"]
+    collect_timer, update_thread = metrics._collect_timer, config._update_thread
+    assert collect_timer is not None and update_thread is not None
+
+    for manager in elasticapm_client._thread_managers.values():
+        assert manager.is_started()
+        manager.pid = os.getpid() + 1
+
+    try:
+        elasticapm_client.close()
+        assert metrics._collect_timer is collect_timer
+        assert config._update_thread is update_thread
+    finally:
+        for manager in elasticapm_client._thread_managers.values():
+            manager.pid = os.getpid()
+
+
 def test_excepthook(elasticapm_client):
     try:
         raise Exception("hi!")
