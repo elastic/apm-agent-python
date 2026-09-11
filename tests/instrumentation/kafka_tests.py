@@ -222,6 +222,8 @@ def _wait_for_consumer_ready(consumer, names, monotonic=time.monotonic):
 
 
 def _produce_records(producer, records, elasticapm_client=None, transaction_type=None):
+    if (elasticapm_client is None) != (transaction_type is None):
+        raise ValueError("elasticapm_client and transaction_type must be provided together")
     if elasticapm_client and transaction_type:
         elasticapm_client.begin_transaction(transaction_type)
     try:
@@ -236,16 +238,20 @@ def _produce_records(producer, records, elasticapm_client=None, transaction_type
 
 def _consume_until_stop_iteration(consumer, on_message=None):
     messages = []
+    original_consumer_timeout_ms = consumer.config["consumer_timeout_ms"]
     consumer.config["consumer_timeout_ms"] = KAFKA_CONSUME_TIMEOUT_MS
-    iterator = iter(consumer)
-    while True:
-        try:
-            message = next(iterator)
-        except StopIteration:
-            return messages
-        messages.append(message)
-        if on_message is not None:
-            on_message(message)
+    try:
+        iterator = iter(consumer)
+        while True:
+            try:
+                message = next(iterator)
+            except StopIteration:
+                return messages
+            messages.append(message)
+            if on_message is not None:
+                on_message(message)
+    finally:
+        consumer.config["consumer_timeout_ms"] = original_consumer_timeout_ms
 
 
 def _capture_span(name):
