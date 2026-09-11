@@ -227,6 +227,7 @@ def elasticapm_client(request):
     client_config.setdefault("cloud_provider", False)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("span_min_duration", "0ms")
     client_config.setdefault("exit_span_min_duration", "0ms")
     client = client_class(**client_config)
     yield client
@@ -264,6 +265,7 @@ def elasticapm_client_log_file(request):
     client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("span_min_duration", "0ms")
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("cloud_provider", False)
     client_config.setdefault("log_level", "warning")
@@ -349,6 +351,7 @@ def sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("span_min_duration", "0ms")
     client_config.setdefault("include_paths", ("*/tests/*",))
     client_config.setdefault("metrics_interval", "0ms")
     client_config.setdefault("cloud_provider", False)
