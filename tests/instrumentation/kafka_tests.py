@@ -243,20 +243,15 @@ def _produce_records(producer, records, elasticapm_client=None, transaction_type
 
 def _consume_until_stop_iteration(consumer, on_message=None):
     messages = []
-    original_consumer_timeout_ms = consumer.config["consumer_timeout_ms"]
-    consumer.config["consumer_timeout_ms"] = KAFKA_CONSUME_TIMEOUT_MS
-    try:
-        iterator = iter(consumer)
-        while True:
-            try:
-                message = next(iterator)
-            except StopIteration:
-                return messages
-            messages.append(message)
-            if on_message is not None:
-                on_message(message)
-    finally:
-        consumer.config["consumer_timeout_ms"] = original_consumer_timeout_ms
+    iterator = iter(consumer)
+    while True:
+        try:
+            message = next(iterator)
+        except StopIteration:
+            return messages
+        messages.append(message)
+        if on_message is not None:
+            on_message(message)
 
 
 def _capture_span(name):
@@ -298,7 +293,7 @@ def producer(topics):
 def consumer(topics):
     consumer = KafkaConsumer(
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVER,
-        consumer_timeout_ms=500,
+        consumer_timeout_ms=KAFKA_CONSUME_TIMEOUT_MS,
         # Unique topics can be produced to before the consumer's initial offset is resolved.
         auto_offset_reset="earliest",
         request_timeout_ms=KAFKA_OPERATION_TIMEOUT_MS,
