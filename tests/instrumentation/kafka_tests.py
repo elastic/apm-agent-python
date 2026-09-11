@@ -162,63 +162,68 @@ def _wait_for_consumer_ready(consumer, names, monotonic=time.monotonic):
     deadline = monotonic() + KAFKA_READINESS_TIMEOUT_SECONDS
     expected_assignment = {TopicPartition(name, 0) for name in names}
     last_error = None
-    while True:
-        consumer.poll(timeout_ms=KAFKA_READY_POLL_TIMEOUT_MS)
-        assignment = consumer.assignment() or set()
-        missing_assignment = sorted(
-            (_format_topic_partition(topic_partition) for topic_partition in expected_assignment - assignment)
-        )
-        unexpected_assignment = sorted(
-            (_format_topic_partition(topic_partition) for topic_partition in assignment - expected_assignment)
-        )
+    original_request_timeout_ms = consumer.config.get("request_timeout_ms")
+    consumer.config["request_timeout_ms"] = KAFKA_OPERATION_TIMEOUT_MS
+    try:
+        while True:
+            consumer.poll(timeout_ms=KAFKA_READY_POLL_TIMEOUT_MS)
+            assignment = consumer.assignment() or set()
+            missing_assignment = sorted(
+                (_format_topic_partition(topic_partition) for topic_partition in expected_assignment - assignment)
+            )
+            unexpected_assignment = sorted(
+                (_format_topic_partition(topic_partition) for topic_partition in assignment - expected_assignment)
+            )
 
-        if not missing_assignment and not unexpected_assignment:
-            try:
-                beginning_offsets = consumer.beginning_offsets(expected_assignment)
-                end_offsets = consumer.end_offsets(expected_assignment)
-            except kafka_errors.KafkaError as exc:
-                last_error = repr(exc)
-                if not exc.retriable:
-                    raise AssertionError(
-                        f"Failed to resolve Kafka consumer offsets for {sorted(names)}: {last_error}"
-                    ) from exc
+            if not missing_assignment and not unexpected_assignment:
+                try:
+                    beginning_offsets = consumer.beginning_offsets(expected_assignment)
+                    end_offsets = consumer.end_offsets(expected_assignment)
+                except kafka_errors.KafkaError as exc:
+                    last_error = repr(exc)
+                    if not exc.retriable:
+                        raise AssertionError(
+                            f"Failed to resolve Kafka consumer offsets for {sorted(names)}: {last_error}"
+                        ) from exc
+                else:
+                    missing_beginning_offsets = sorted(
+                        _format_topic_partition(topic_partition)
+                        for topic_partition in expected_assignment
+                        if topic_partition not in beginning_offsets
+                    )
+                    missing_end_offsets = sorted(
+                        _format_topic_partition(topic_partition)
+                        for topic_partition in expected_assignment
+                        if topic_partition not in end_offsets
+                    )
+                    if not missing_beginning_offsets and not missing_end_offsets:
+                        return
+                    last_error = ", ".join(
+                        part
+                        for part in (
+                            (
+                                f"missing beginning offsets={missing_beginning_offsets}"
+                                if missing_beginning_offsets
+                                else None
+                            ),
+                            f"missing end offsets={missing_end_offsets}" if missing_end_offsets else None,
+                        )
+                        if part
+                    )
             else:
-                missing_beginning_offsets = sorted(
-                    _format_topic_partition(topic_partition)
-                    for topic_partition in expected_assignment
-                    if topic_partition not in beginning_offsets
-                )
-                missing_end_offsets = sorted(
-                    _format_topic_partition(topic_partition)
-                    for topic_partition in expected_assignment
-                    if topic_partition not in end_offsets
-                )
-                if not missing_beginning_offsets and not missing_end_offsets:
-                    return
                 last_error = ", ".join(
                     part
                     for part in (
-                        (
-                            f"missing beginning offsets={missing_beginning_offsets}"
-                            if missing_beginning_offsets
-                            else None
-                        ),
-                        f"missing end offsets={missing_end_offsets}" if missing_end_offsets else None,
+                        f"missing assignment={missing_assignment}" if missing_assignment else None,
+                        f"unexpected assignment={unexpected_assignment}" if unexpected_assignment else None,
                     )
                     if part
                 )
-        else:
-            last_error = ", ".join(
-                part
-                for part in (
-                    f"missing assignment={missing_assignment}" if missing_assignment else None,
-                    f"unexpected assignment={unexpected_assignment}" if unexpected_assignment else None,
-                )
-                if part
-            )
 
-        if monotonic() >= deadline:
-            _raise_kafka_timeout("consumer readiness", names, last_error)
+            if monotonic() >= deadline:
+                _raise_kafka_timeout("consumer readiness", names, last_error)
+    finally:
+        consumer.config["request_timeout_ms"] = original_request_timeout_ms
 
 
 def _produce_records(producer, records, elasticapm_client=None, transaction_type=None):
@@ -319,6 +324,8 @@ def test_wait_for_topics_ready_rejects_missing_topics():
 
 def test_wait_for_consumer_ready_rejects_partial_assignment():
     class FakeConsumer(object):
+        config = {"request_timeout_ms": 1234}
+
         def poll(self, timeout_ms=0):
             return {}
 
