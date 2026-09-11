@@ -224,7 +224,7 @@ def _wait_for_consumer_ready(consumer, names, monotonic=time.monotonic):
 def _produce_records(producer, records, elasticapm_client=None, transaction_type=None):
     if (elasticapm_client is None) != (transaction_type is None):
         raise ValueError("elasticapm_client and transaction_type must be provided together")
-    if elasticapm_client and transaction_type:
+    if elasticapm_client is not None and transaction_type is not None:
         elasticapm_client.begin_transaction(transaction_type)
     try:
         futures = [producer.send(topic, key=key, value=value) for topic, key, value in records]
@@ -232,7 +232,7 @@ def _produce_records(producer, records, elasticapm_client=None, transaction_type
             future.get(timeout=KAFKA_READINESS_TIMEOUT_SECONDS)
         producer.flush(timeout=KAFKA_READINESS_TIMEOUT_SECONDS)
     finally:
-        if elasticapm_client and transaction_type:
+        if elasticapm_client is not None and transaction_type is not None:
             elasticapm_client.end_transaction(transaction_type)
 
 
