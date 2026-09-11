@@ -82,7 +82,9 @@ def test_instrument_nonexisting_method_on_module():
 def test_instrument_nonexisting_method(caplog):
     with caplog.at_level(logging.DEBUG, "elasticapm.instrument"):
         _TestInstrumentNonExistingMethod().instrument()
-    assert_any_record_contains(caplog.records, "has no attribute", "elasticapm.instrument")
+    assert_any_record_contains(
+        caplog.records, "Skipping instrumentation of logging.Logger.non_existing_method:", "elasticapm.instrument"
+    )
 
 
 def test_instrument_broken_module(caplog):
