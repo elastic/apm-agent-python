@@ -94,7 +94,8 @@ def get_name_from_func(func: FunctionType) -> str:
 
 
 def build_name_with_http_method_prefix(name, request):
-    return " ".join((request.method, name)) if name else name
+    name = name or "unknown route"
+    return "{} {}".format(request.method, name) if hasattr(request, "method") else name
 
 
 def is_master_process() -> bool:
