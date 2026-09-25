@@ -578,6 +578,21 @@ Collected trace data:
 * requested URL
 
 
+#### httpx2 [automatic-instrumentation-httpx2]
+
+Library: `httpx2` (`>=2`, requires Python 3.10+)
+
+Instrumented methods:
+
+* `httpx2.Client.send`
+* `httpx2.AsyncClient.send`
+
+Collected trace data:
+
+* HTTP method
+* requested URL
+
+
 ### Services [automatic-instrumentation-services]
 
 

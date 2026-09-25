@@ -72,6 +72,16 @@ _cls_register = {
     "elasticapm.instrumentation.packages.grpc.GRPCServerInstrumentation",
 }
 
+if sys.version_info >= (3, 10):
+    _cls_register.update(
+        [
+            "elasticapm.instrumentation.packages.httpx2.sync.httpx2.Httpx2ClientInstrumentation",
+            "elasticapm.instrumentation.packages.httpx2.sync.httpcore2.HTTPCore2Instrumentation",
+            "elasticapm.instrumentation.packages.httpx2.async.httpx2.Httpx2AsyncClientInstrumentation",
+            "elasticapm.instrumentation.packages.httpx2.async.httpcore2.HTTPCore2AsyncInstrumentation",
+        ]
+    )
+
 if sys.version_info >= (3, 7):
     _cls_register.update(
         [

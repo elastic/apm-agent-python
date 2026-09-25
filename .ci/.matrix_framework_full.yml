@@ -83,6 +83,7 @@ FRAMEWORK:
   - httpx-0.14
   - httpx-0.21
   - httpx-newest
+  - httpx2-newest
   - httplib2-newest
   - sanic-20.12
   - sanic-newest
