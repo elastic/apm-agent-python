@@ -1,3 +1,3 @@
-FROM docker.elastic.co/wolfi/chainguard-base:latest@sha256:ed09c4acb4dd9323b88c363d202b29bfde61a92e8683507bb17141fe9745475d
+FROM docker.elastic.co/wolfi/chainguard-base:latest@sha256:38714c1af68c0f38aaa546fbc27ae78509c9eb4ae9ff847ecd2f29b27992c99d
 ARG AGENT_DIR
 COPY ${AGENT_DIR} /opt/python
