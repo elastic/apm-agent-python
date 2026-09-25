@@ -678,6 +678,10 @@ class Config(_ConfigBase):
         "SPAN_COMPRESSION_SAME_KIND_MAX_DURATION",
         default=timedelta(seconds=0),
     )
+    span_min_duration = _DurationConfigValue(
+        "SPAN_MIN_DURATION",
+        default=timedelta(seconds=0),
+    )
     exit_span_min_duration = _DurationConfigValue(
         "EXIT_SPAN_MIN_DURATION",
         default=timedelta(seconds=0),

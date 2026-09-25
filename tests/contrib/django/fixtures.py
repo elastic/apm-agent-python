@@ -59,6 +59,7 @@ def django_elasticapm_client(request):
     client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("span_min_duration", "0ms")
     app = apps.get_app_config("elasticapm")
     old_client = app.client
     client = TempStoreClient(**client_config)
@@ -88,6 +89,7 @@ def django_sending_elasticapm_client(request, validating_httpserver):
     client_config.setdefault("span_stack_trace_min_duration", 0)
     client_config.setdefault("span_compression_exact_match_max_duration", "0ms")
     client_config.setdefault("span_compression_same_kind_max_duration", "0ms")
+    client_config.setdefault("span_min_duration", "0ms")
     client_config.setdefault("exit_span_min_duration", "0ms")
     app = apps.get_app_config("elasticapm")
     old_client = app.client
