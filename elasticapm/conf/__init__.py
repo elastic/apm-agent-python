@@ -29,6 +29,7 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 
 
+import _hashlib
 import logging
 import logging.handlers
 import math
@@ -36,8 +37,6 @@ import os
 import re
 import threading
 from datetime import timedelta
-
-import _hashlib
 
 from elasticapm.conf.constants import BASE_SANITIZE_FIELD_NAMES, TRACE_CONTINUATION_STRATEGY
 from elasticapm.utils import compat, starmatch_to_regex
