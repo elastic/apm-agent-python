@@ -610,6 +610,24 @@ if a span propagates distributed tracing IDs, it will not be ignored, even if it
 ::::
 
 
+### `span_min_duration` [config-span-min-duration]
+
+[![dynamic config](images/dynamic-config.svg "") ](#dynamic-configuration)
+
+| Environment | Django/Flask | Default |
+| --- | --- | --- |
+| `ELASTIC_APM_SPAN_MIN_DURATION` | `SPAN_MIN_DURATION` | `"0ms"` |
+
+Spans shorter than this threshold can be ignored. This applies to successful spans in general.
+
+For leaf/exit spans, [`exit_span_min_duration`](#config-exit-span-min-duration) takes precedence when it is configured.
+
+This feature is disabled by default.
+
+::::{note}
+If a span propagates distributed tracing IDs, it will not be ignored, even if it is shorter than the configured threshold. This is to ensure that no broken traces are recorded.
+::::
+
 
 ### `api_request_size` [config-api-request-size]
 
@@ -1085,5 +1103,4 @@ The *size* format is used for options like maximum buffer sizes. The unit is pro
 ::::{note}
 We use the power-of-two sizing convention, e.g. `1 kilobyte == 1024 bytes`
 ::::
-
 
