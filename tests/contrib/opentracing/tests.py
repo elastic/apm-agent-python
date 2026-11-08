@@ -34,8 +34,8 @@ import pytest  # isort:skip
 opentracing = pytest.importorskip("opentracing")  # isort:skip
 
 import sys
+from unittest import mock
 
-import mock
 from opentracing import Format
 
 import elasticapm

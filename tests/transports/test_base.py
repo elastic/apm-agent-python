@@ -35,8 +35,8 @@ import string
 import sys
 import time
 import timeit
+from unittest import mock
 
-import mock
 import pytest
 
 from elasticapm.transport.base import Transport, TransportState

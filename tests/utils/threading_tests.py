@@ -29,8 +29,8 @@
 
 import platform
 import time
+from unittest import mock
 
-import mock
 import pytest
 
 from elasticapm.utils.threading import IntervalTimer

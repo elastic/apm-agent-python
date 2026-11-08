@@ -34,9 +34,9 @@ from __future__ import absolute_import
 
 import importlib
 import os
+from unittest.mock import Mock
 
 import pytest
-from mock import Mock
 
 import elasticapm
 from elasticapm.conf import constants

@@ -28,10 +28,10 @@
 #  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import urllib.parse
+from unittest import mock
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
-import mock
 import pytest
 
 from elasticapm.conf import constants

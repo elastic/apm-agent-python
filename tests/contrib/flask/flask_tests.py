@@ -35,9 +35,9 @@ pytest.importorskip("flask")  # isort:skip
 import io
 import logging
 import os
+from unittest import mock
 from urllib.request import urlopen
 
-import mock
 from flask import signals
 
 import elasticapm
