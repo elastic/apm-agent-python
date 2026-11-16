@@ -748,6 +748,8 @@ If set to `True`, the agent won’t send any events to the APM Server, independe
 
 If set to `False`, the agent won’t instrument any code. This disables most of the tracing functionality, but can be useful to debug possible instrumentation issues.
 
+For explicitly installed Starlette/FastAPI APM middleware, the transaction-ending framework hook remains enabled so HTTP transactions complete, including after error handling. Library instrumentation remains disabled.
+
 
 ### `verify_server_cert` [config-verify-server-cert]
 

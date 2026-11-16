@@ -36,13 +36,14 @@ from elasticapm.instrumentation import register
 _lock = threading.Lock()
 
 
-def instrument() -> None:
+def instrument(instrumentation_classes=None) -> None:
     """
-    Instruments all registered methods/functions with a wrapper
+    Instruments registered methods/functions, optionally restricted to classes.
     """
     with _lock:
         for obj in register.get_instrumentation_objects():
-            obj.instrument()
+            if instrumentation_classes is None or isinstance(obj, instrumentation_classes):
+                obj.instrument()
 
 
 def uninstrument() -> None:

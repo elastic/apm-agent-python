@@ -47,6 +47,7 @@ from elasticapm.base import Client, get_client
 from elasticapm.conf import constants
 from elasticapm.contrib.asyncio.traces import set_context
 from elasticapm.contrib.starlette.utils import get_body, get_data_from_request, get_data_from_response
+from elasticapm.instrumentation.packages.asyncio.starlette import StarletteServerErrorMiddlewareInstrumentation
 from elasticapm.utils.disttracing import TraceParent
 from elasticapm.utils.encoding import long_field
 from elasticapm.utils.logging import get_logger
@@ -161,8 +162,15 @@ class ElasticAPM:
         if not self.client:
             self.client = make_apm_client(**kwargs)
 
-        if self.client.config.instrument and self.client.config.enabled:
-            elasticapm.instrumentation.control.instrument()
+        if self.client.config.enabled:
+            if self.client.config.instrument:
+                elasticapm.instrumentation.control.instrument()
+            else:
+                # Explicit middleware still needs the outer transaction-ending
+                # hook, after Starlette's error handler has finished.
+                elasticapm.instrumentation.control.instrument(
+                    instrumentation_classes=(StarletteServerErrorMiddlewareInstrumentation,)
+                )
 
         # If we ever make this a general-use ASGI middleware we should use
         # `asgiref.compatibility.guarantee_single_callable(app)` here
