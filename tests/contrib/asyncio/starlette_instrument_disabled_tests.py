@@ -57,6 +57,7 @@ def clean_instrumentation():
     elasticapm.uninstrument()
 
 
+@pytest.mark.usefixtures("event_loop")
 @pytest.mark.parametrize("framework", ["starlette", "fastapi"])
 @pytest.mark.parametrize("instrument", [False, True])
 @pytest.mark.parametrize("kind", ["success", "handled", "unhandled", "stream"])
@@ -112,6 +113,7 @@ def test_transaction_completion_without_library_instrumentation(elasticapm_clien
         assert response.content == b"ab"
 
 
+@pytest.mark.usefixtures("event_loop")
 @pytest.mark.parametrize("elasticapm_client", [{"instrument": False}, {"instrument": True}], indirect=True)
 def test_library_instrumentation_respects_instrument_setting(elasticapm_client):
     async def endpoint(request):

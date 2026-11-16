@@ -40,7 +40,7 @@ from elasticapm.conf.constants import SPAN, TRANSACTION
 
 kafka = pytest.importorskip("kafka")
 
-from kafka import KafkaConsumer, KafkaProducer
+from kafka import KafkaConsumer, KafkaProducer, TopicPartition
 from kafka.admin import KafkaAdminClient, NewTopic
 
 pytestmark = [pytest.mark.kafka]
@@ -57,15 +57,18 @@ def topics():
     admin_client = KafkaAdminClient(bootstrap_servers=[f"{KAFKA_HOST}:9092"])
     # Use unique topic names because Kafka topic deletion is asynchronous and fixed names can leak state between tests.
     try:
-        admin_client.create_topics([NewTopic(name, num_partitions=1, replication_factor=1) for name in topics])
-    except Exception:
-        pass
-    yield topics
-    try:
-        admin_client.delete_topics(topics)
-    except Exception:
-        pass
-    admin_client.close()
+        response = admin_client.create_topics(
+            [NewTopic(name, num_partitions=1, replication_factor=1) for name in topics]
+        )
+        errors = [error for error in response.topic_errors if error[1]]
+        assert not errors, f"Failed to create Kafka test topics: {errors}"
+        yield topics
+    finally:
+        try:
+            admin_client.delete_topics(topics)
+        except Exception:
+            pass
+        admin_client.close()
 
 
 @pytest.fixture()
@@ -83,12 +86,23 @@ def consumer(topics):
         # Unique topics can be produced to before the consumer's initial offset is resolved.
         auto_offset_reset="earliest",
     )
-    consumer.subscribe(topics=topics)
-    deadline = time.time() + 5
-    while not consumer.assignment() and time.time() < deadline:
-        consumer.poll(timeout_ms=100)
-    yield consumer
-    consumer.close()
+    try:
+        consumer.subscribe(topics=topics)
+        expected_assignment = {TopicPartition(topic, 0) for topic in topics}
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            # Retry transient missing-topic metadata instead of waiting for the cached snapshot to expire.
+            consumer.topics()
+            consumer.poll(timeout_ms=100)
+            if consumer.assignment() == expected_assignment:
+                break
+        else:
+            pytest.fail(
+                f"Kafka consumer assignment timed out: expected {expected_assignment}, got {consumer.assignment()}"
+            )
+        yield consumer
+    finally:
+        consumer.close()
 
 
 def test_kafka_produce(instrument, elasticapm_client, producer, topics):
