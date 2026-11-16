@@ -34,6 +34,7 @@ import elasticapm
 
 redis = pytest.importorskip("redis.asyncio")  # isort:skip
 
+import asyncio
 import os
 
 import pytest_asyncio
@@ -145,14 +146,24 @@ async def test_redis_client(instrument, elasticapm_client, redis_async_conn):
 
 
 @pytest.mark.integrationtest
-async def test_publish_subscribe_async(instrument, elasticapm_client, redis_async_conn):
+async def test_publish_subscribe_async(instrument, elasticapm_client, redis_async_conn, mocker):
     elasticapm_client.begin_transaction("transaction.test")
     pubsub = redis_async_conn.pubsub()
+    delay = 0.01
     with capture_span("test_publish_subscribe", "test"):
         # publish
         await redis_async_conn.publish("mykey", "a")
 
-        # subscribe
+        # Freeze span timing so only the simulated delay contributes to SUBSCRIBE's duration.
+        clock = mocker.patch("elasticapm.traces._time_func", return_value=elasticapm.traces._time_func())
+        execute = pubsub._execute
+
+        async def delayed_execute(*args, **kwargs):
+            await asyncio.sleep(0)
+            clock.return_value += delay
+            return await execute(*args, **kwargs)
+
+        mocker.patch.object(pubsub, "_execute", new=delayed_execute)
         await pubsub.subscribe("mykey")
 
     elasticapm_client.end_transaction("MyView")
@@ -184,7 +195,7 @@ async def test_publish_subscribe_async(instrument, elasticapm_client, redis_asyn
         "port": int(os.environ.get("REDIS_PORT", 6379)),
         "service": {"name": "", "resource": "redis", "type": ""},
     }
-    assert spans[1]["duration"] > 0.2  # sanity test to ensure we measure the actual call
+    assert spans[1]["duration"] == pytest.approx(delay * 1000)  # span durations are in milliseconds
 
     assert spans[2]["name"] == "test_publish_subscribe"
     assert spans[2]["type"] == "test"
