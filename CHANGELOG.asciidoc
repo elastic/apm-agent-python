@@ -32,6 +32,14 @@ endif::[]
 [[release-notes-6.x]]
 === Python Agent version 6.x
 
+[[release-notes-6.26.3]]
+==== 6.26.3 - 2026-11-16
+
+[float]
+===== Bug fixes
+
+* Fix transaction completion in Starlette/FastAPI APM middleware when instrumentation is turned off {pull}2778[#2778]
+
 [[release-notes-6.26.2]]
 ==== 6.26.2 - 2026-06-22
 

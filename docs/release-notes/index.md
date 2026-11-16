@@ -26,6 +26,13 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 % ### Fixes [elastic-apm-python-agent-versionext-fixes]
 
+## 6.26.3 [elastic-apm-python-agent-6263-release-notes]
+**Release date:** November 16, 2026
+
+### Fixes [elastic-apm-python-agent-6263-fixes]
+
+* Fix transaction completion in Starlette/FastAPI APM middleware when instrumentation is turned off [#2778](https://github.com/elastic/apm-agent-python/pull/2778)
+
 ## 6.26.2 [elastic-apm-python-agent-6262-release-notes]
 **Release date:** June 22, 2026
 
