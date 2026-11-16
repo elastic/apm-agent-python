@@ -38,7 +38,7 @@ endif::[]
 [float]
 ===== Bug fixes
 
-* Fix transaction completion in Starlette/FastAPI APM middleware when instrumentation is disabled {pull}2778[#2778]
+* Fix transaction completion in Starlette/FastAPI APM middleware when instrumentation is turned off {pull}2778[#2778]
 
 [[release-notes-6.26.2]]
 ==== 6.26.2 - 2026-06-22
