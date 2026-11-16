@@ -29,10 +29,11 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import asyncio
+import sys
 
 import pytest
 
-pytest.importorskip("starlette")
+starlette = pytest.importorskip("starlette")
 
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -46,6 +47,8 @@ from elasticapm.contrib.starlette import ElasticAPM
 
 pytestmark = pytest.mark.starlette
 
+starlette_version_tuple = tuple(map(int, starlette.__version__.split(".")[:3]))
+
 
 @pytest.fixture(autouse=True)
 def clean_instrumentation():
@@ -58,6 +61,8 @@ def clean_instrumentation():
 @pytest.mark.parametrize("instrument", [False, True])
 @pytest.mark.parametrize("kind", ["success", "handled", "unhandled", "stream"])
 def test_transaction_completion_without_library_instrumentation(elasticapm_client, instrument, kind, framework, mocker):
+    if kind == "stream" and sys.version_info >= (3, 11) and starlette_version_tuple < (0, 14):
+        pytest.skip("Starlette < 0.14 passes coroutines to asyncio.wait(), which Python 3.11+ forbids")
     elasticapm_client.config.update("1", instrument=instrument)
     handler_ids = []
 
