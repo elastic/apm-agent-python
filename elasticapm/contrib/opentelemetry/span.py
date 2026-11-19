@@ -73,7 +73,12 @@ class Span(oteltrace.Span):
         Only the first call to `end` should modify the span, and
         implementations are free to ignore or raise on further calls.
         """
-        is_transaction = isinstance(self.elastic_span, elasticapm.traces.Transaction)
+        elastic_span = self.elastic_span
+        if isinstance(elastic_span, elasticapm.traces.DroppedSpan):
+            if not elastic_span.ended_time:
+                elastic_span.end()
+            return
+        is_transaction = isinstance(elastic_span, elasticapm.traces.Transaction)
         if self.elastic_span.ended_time:
             # Already ended
             return
@@ -100,14 +105,15 @@ class Span(oteltrace.Span):
         Returns:
             A :class:`opentelemetry.trace.SpanContext` with a copy of this span's immutable state.
         """
+        elastic_span = self.elastic_span
+        if isinstance(elastic_span, elasticapm.traces.DroppedSpan):
+            return SpanContext(trace_id=0, span_id=0, is_remote=False)
         return SpanContext(
-            trace_id=int(self.elastic_span.transaction.trace_parent.trace_id, base=16),
-            span_id=int(self.elastic_span.id, base=16),
+            trace_id=int(elastic_span.transaction.trace_parent.trace_id, base=16),
+            span_id=int(elastic_span.id, base=16),
             is_remote=False,
-            trace_flags=TraceFlags(
-                TraceFlags.SAMPLED if self.elastic_span.transaction.is_sampled else TraceFlags.DEFAULT
-            ),
-            trace_state=TraceState(list(self.elastic_span.transaction.trace_parent.tracestate_dict.items())),
+            trace_flags=TraceFlags(TraceFlags.SAMPLED if elastic_span.transaction.is_sampled else TraceFlags.DEFAULT),
+            trace_state=TraceState(list(elastic_span.transaction.trace_parent.tracestate_dict.items())),
         )
 
     def set_attributes(self, attributes: typing.Dict[str, types.AttributeValue]) -> None:
@@ -125,8 +131,11 @@ class Span(oteltrace.Span):
         Sets a single Attribute with the key and value passed as arguments.
         Note: The behavior of `None` value attributes is undefined, and hence strongly discouraged.
         """
-        if "otel_attributes" not in self.elastic_span.context:
-            self.elastic_span.context["otel_attributes"] = {}
+        span_context = self.elastic_span.context
+        if span_context is None:
+            return
+        if "otel_attributes" not in span_context:
+            span_context["otel_attributes"] = {}
         self.elastic_span.context["otel_attributes"][key] = value
 
     def add_event(
@@ -148,14 +157,19 @@ class Span(oteltrace.Span):
         Upon this update, any sampling behavior based on Span name will depend
         on the implementation.
         """
-        self.elastic_span.name = name
+        elastic_span = self.elastic_span
+        if not isinstance(elastic_span, elasticapm.traces.DroppedSpan):
+            elastic_span.name = name
 
     def is_recording(self) -> bool:
         """Returns whether this span will be recorded.
         Returns true if this Span is active and recording information like
         events with the add_event operation and attributes using set_attribute.
         """
-        return self.elastic_span.transaction.is_sampled and not self.elastic_span.ended_time
+        elastic_span = self.elastic_span
+        if isinstance(elastic_span, elasticapm.traces.DroppedSpan):
+            return False
+        return elastic_span.transaction.is_sampled and not elastic_span.ended_time
 
     def set_status(self, status: Union[Status, StatusCode], description: Optional[str] = None) -> None:
         """Sets the Status of the Span. If used, this will override the default

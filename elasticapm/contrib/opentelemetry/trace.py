@@ -166,7 +166,9 @@ class Tracer(oteltrace.Tracer):
             )
             span.set_attributes(attributes)
         spankind = get_span_kind(kind)
-        elastic_span.context["otel_spankind"] = spankind
+        span_context = elastic_span.context
+        if span_context is not None:
+            span_context["otel_spankind"] = spankind
 
         return span
 
