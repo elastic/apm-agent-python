@@ -105,6 +105,7 @@ jobs:
           name: arn-file
           path: "${{ github.workspace }}/.arn-file.md"
           if-no-files-found: error
+          include-hidden-files: true
 
   publish-docker:
     needs:
