@@ -203,4 +203,32 @@ def test_set_status_on_span(tracer: Tracer):
     assert span_event["outcome"] == "failure"
 
 
+@pytest.mark.parametrize("elasticapm_client", [{"transaction_max_spans": 5}], indirect=True)
+def test_ot_dropped_spans_exceeding_transaction_max_spans(elasticapm_client, tracer: Tracer):
+    def capture_nested(steps: int) -> None:
+        if steps == 0:
+            return
+        with tracer.start_as_current_span(
+            f"step-{steps}",
+            kind=SpanKind.CLIENT,
+            attributes={"http.url": "http://example.com"},
+        ) as span:
+            if steps <= 3:
+                assert not span.is_recording()
+                assert not span.get_span_context().is_valid
+                span.set_attribute("extra", "ignored")
+                span.update_name("renamed")
+                span.set_status(StatusCode.ERROR)
+            capture_nested(steps - 1)
+
+    elasticapm_client.begin_transaction("processors")
+    capture_nested(8)
+    elasticapm_client.end_transaction("myapp.billing_process")
+
+    assert len(elasticapm_client.events[constants.SPAN]) == 5
+    tx = elasticapm_client.events[constants.TRANSACTION][0]
+    assert tx["span_count"]["started"] == 5
+    assert tx["span_count"]["dropped"] == 3
+
+
 # TODO Add some span subtype testing?
