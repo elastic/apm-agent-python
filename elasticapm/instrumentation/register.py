@@ -96,6 +96,7 @@ if sys.version_info >= (3, 7):
             "elasticapm.instrumentation.packages.asyncio.redis_asyncio.RedisPipelineInstrumentation",
             "elasticapm.instrumentation.packages.asyncio.psycopg_async.AsyncPsycopgInstrumentation",
             "elasticapm.instrumentation.packages.grpc.GRPCAsyncServerInstrumentation",
+            "elasticapm.instrumentation.packages.asyncio.aiokafka.AIOKafkaInstrumentation",
         ]
     )
 
